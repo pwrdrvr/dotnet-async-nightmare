@@ -205,9 +205,9 @@ namespace ThreadPoolOrdering
                 tasks.Add(task);
                 
                 // Add a small delay every 100 tasks to prevent overwhelming the system
-                if (i % 100 == 0 && i > 0)
+                if (i % 10 == 0 && i > 0)
                 {
-                    await Task.Delay(10);
+                    await Task.Delay(100);
                 }
             }
             
