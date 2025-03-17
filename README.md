@@ -39,7 +39,7 @@ You can generate these charts with real benchmarks on your system by running:
 After running the benchmarks:
 1. View the interactive charts in your browser
 2. Take screenshots of the charts and save them to the `screenshots` directory
-3. The full results are available in `charts.html` and `benchmark-data.json`
+3. The full results are available in `docs/index.html` and `benchmark-data.json`
 
 ### Key Findings Visualized
 
@@ -49,7 +49,7 @@ The charts clearly show:
 2. **Thread Overhead**: Default ThreadPool settings waste significant CPU on context switching
 3. **Semaphore Spinning**: Disabling ThreadPool semaphore spinning alone cuts CPU usage by 50%
 
-See [charts.html](charts.html) for detailed interactive results after running benchmarks.
+See [charts](docs/index.html) for detailed interactive results after running benchmarks.
 
 ## Links
 

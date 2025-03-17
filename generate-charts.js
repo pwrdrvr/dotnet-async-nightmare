@@ -5,7 +5,7 @@ const path = require('path');
 
 // Paths for input/output files
 const DATA_FILE = path.join(__dirname, 'benchmark-data.json');
-const CHART_HTML_FILE = path.join(__dirname, 'charts.html');
+const CHART_HTML_FILE = path.join(__dirname, 'docs', 'index.html');
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 
 // Function to generate HTML with Chart.js visualizations

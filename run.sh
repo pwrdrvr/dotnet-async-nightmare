@@ -77,11 +77,11 @@ else
     
     # Open the HTML file in the default browser
     if command -v open > /dev/null; then
-      open charts.html
+      open docs/index.html
     elif command -v xdg-open > /dev/null; then
-      xdg-open charts.html
+      xdg-open docs/index.html
     else
-      echo "Please open charts.html in your browser to view the results."
+      echo "Please open docs/index.html in your browser to view the results."
     fi
     
     # Mention server logs

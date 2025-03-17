@@ -7,7 +7,7 @@ const { execSync } = require('child_process');
 // Paths
 const SAMPLE_DATA_FILE = path.join(__dirname, 'sample-data.json');
 const DATA_FILE = path.join(__dirname, 'benchmark-data.json');
-const CHART_HTML_FILE = path.join(__dirname, 'charts.html');
+const CHART_HTML_FILE = path.join(__dirname, 'docs', 'index.html');
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 
 // Copy sample data to benchmark data location
