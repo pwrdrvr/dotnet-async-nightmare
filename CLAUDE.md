@@ -14,6 +14,10 @@ LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 
 # Test
 curl http://localhost:5001/user/1234
 oha -c 20 -z 60s http://localhost:5001/user/1234
+
+# Thread Pool Ordering Tests
+dotnet run -c Release --project src/ordering/ordering.csproj
+dotnet run -c Release --project src/ordering/ordering.csproj --histogram
 ```
 
 ## Code Style Guidelines
