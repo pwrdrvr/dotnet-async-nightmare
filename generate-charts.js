@@ -10,23 +10,30 @@ const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
 
 // Function to generate HTML with Chart.js visualizations
 function generateChartsHtml(data) {
-  // Sort data by RPS per core (descending)
-  data.sort((a, b) => b.rpsPerCore - a.rpsPerCore);
+  // Extract benchmark data and system info
+  const benchmarks = data.benchmarks || data;
+  const systemInfo = data.systemInfo || {};
+  
+  // Sort benchmarks by RPS per core (descending)
+  benchmarks.sort((a, b) => b.rpsPerCore - a.rpsPerCore);
   
   // Extract labels and data for charts
-  const labels = data.map(item => item.config.name);
-  const rpsData = data.map(item => item.summary.requestsPerSec);
-  const cpuData = data.map(item => item.cpuUsage);
-  const rpsPerCoreData = data.map(item => item.rpsPerCore);
+  const labels = benchmarks.map(item => item.config.name);
+  const rpsData = benchmarks.map(item => item.summary.requestsPerSec);
+  const cpuData = benchmarks.map(item => item.cpuUsage);
+  const rpsPerCoreData = benchmarks.map(item => item.rpsPerCore);
   
   // Determine the best configuration (highest RPS per CPU core)
-  const bestConfig = data.reduce((prev, current) => 
+  const bestConfig = benchmarks.reduce((prev, current) => 
     (current.rpsPerCore > prev.rpsPerCore) ? current : prev
   );
   
   // Calculate improvement factor compared to base case
-  const baseCase = data.find(item => item.config.name === 'Base Case');
+  const baseCase = benchmarks.find(item => item.config.name === 'Base Case');
   const improvementFactor = baseCase ? (bestConfig.rpsPerCore / baseCase.rpsPerCore).toFixed(1) : 'N/A';
+  
+  // Format system info for display
+  const hasSystemInfo = Object.keys(systemInfo).length > 0;
   
   // Generate HTML with Chart.js
   return `
@@ -105,10 +112,66 @@ function generateChartsHtml(data) {
     .fire-emoji {
       font-size: 24px;
     }
+    details {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      border: 1px solid #eee;
+    }
+    details summary {
+      cursor: pointer;
+      padding: 5px 0;
+      font-weight: 600;
+      color: #0066cc;
+    }
+    .system-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .system-info div {
+      padding: 8px;
+      border-radius: 4px;
+      background-color: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .system-info strong {
+      font-weight: 600;
+      color: #555;
+      margin-right: 5px;
+    }
+    @media print {
+      details {
+        display: block;
+      }
+      details summary {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
   <h1>.NET Async Thread Pool Performance</h1>
+  
+  ${hasSystemInfo ? `
+  <details>
+    <summary>System Information & Benchmark Environment</summary>
+    <div class="system-info">
+      <div><strong>Date:</strong> ${systemInfo.date || 'Unknown'} ${systemInfo.time || ''}</div>
+      <div><strong>OS:</strong> ${systemInfo.os || 'Unknown'}</div>
+      <div><strong>CPU:</strong> ${systemInfo.cpuModel || 'Unknown'}</div>
+      <div><strong>CPU Cores:</strong> ${systemInfo.cpuCores || 'Unknown'}</div>
+      <div><strong>Memory:</strong> ${systemInfo.totalMemoryGB || 'Unknown'} GB Total</div>
+      <div><strong>Free Memory:</strong> ${systemInfo.freeMemoryGB || 'Unknown'} GB</div>
+      <div><strong>.NET Version:</strong> ${systemInfo.dotnetVersion || 'Unknown'}</div>
+      <div><strong>.NET Runtime:</strong> ${systemInfo.dotnetRuntimeVersion || 'Unknown'}</div>
+      <div><strong>Node.js:</strong> ${systemInfo.nodeVersion || 'Unknown'}</div>
+      <div><strong>Load Tester:</strong> ${systemInfo.ohaVersion || 'oha'}</div>
+    </div>
+  </details>
+  ` : ''}
+  
   <p>This dashboard visualizes the performance impact of different thread pool configurations in .NET 8.0. 
      The tests measure how various settings affect request throughput and CPU efficiency.</p>
   
@@ -161,7 +224,7 @@ function generateChartsHtml(data) {
       </tr>
     </thead>
     <tbody>
-      ${data.map(item => {
+      ${benchmarks.map(item => {
         const cpuMeasurement = item.cpuMeasurement || {};
         const isMeasured = cpuMeasurement.measured;
         const minMaxCpu = isMeasured 
@@ -201,7 +264,7 @@ function generateChartsHtml(data) {
   
   <script>
     // Load the benchmark data
-    const data = ${JSON.stringify(data)};
+    const data = ${JSON.stringify(benchmarks)};
     
     // Chart colors
     const colors = [
@@ -353,14 +416,31 @@ function generateCharts() {
     }
     
     // Read benchmark data
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    if (!data || data.length === 0) {
+    const rawData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    
+    // Handle both old and new data formats
+    let benchmarkData;
+    let systemInfo = {};
+    
+    if (Array.isArray(rawData)) {
+      // Old format - just an array of benchmarks
+      benchmarkData = rawData;
+    } else if (rawData.benchmarks && Array.isArray(rawData.benchmarks)) {
+      // New format with systemInfo and benchmarks
+      benchmarkData = rawData.benchmarks;
+      systemInfo = rawData.systemInfo || {};
+    } else {
+      console.error('Error: Invalid data format. Please run the benchmarks again.');
+      process.exit(1);
+    }
+    
+    if (!benchmarkData || benchmarkData.length === 0) {
       console.error('Error: No benchmark data found. Please run the benchmarks first.');
       process.exit(1);
     }
     
     // Generate HTML with charts
-    const htmlContent = generateChartsHtml(data);
+    const htmlContent = generateChartsHtml({ benchmarks: benchmarkData, systemInfo });
     
     // Write HTML file
     fs.writeFileSync(CHART_HTML_FILE, htmlContent);

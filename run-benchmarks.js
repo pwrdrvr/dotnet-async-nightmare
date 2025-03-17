@@ -411,9 +411,104 @@ async function runBenchmark(config) {
   return results;
 }
 
+// Function to collect system information
+async function collectSystemInfo() {
+  const systemInfo = {
+    timestamp: new Date().toISOString(),
+    date: new Date().toLocaleDateString(),
+    time: new Date().toLocaleTimeString(),
+    os: os.type() + ' ' + os.release(),
+    hostname: os.hostname(),
+    platform: os.platform(),
+    cpuModel: '',
+    cpuCores: os.cpus().length,
+    cpuLogical: os.cpus().length,
+    totalMemoryGB: (os.totalmem() / (1024 * 1024 * 1024)).toFixed(2),
+    freeMemoryGB: (os.freemem() / (1024 * 1024 * 1024)).toFixed(2),
+    nodeVersion: process.version,
+    dotnetVersion: '',
+    ohaVersion: ''
+  };
+  
+  // Get CPU model from first core
+  if (os.cpus().length > 0) {
+    systemInfo.cpuModel = os.cpus()[0].model.trim();
+  }
+  
+  // Try to get more detailed OS info
+  try {
+    if (os.platform() === 'darwin') {
+      // macOS - get version
+      const macosVersion = execSync('sw_vers -productVersion', { encoding: 'utf8' }).trim();
+      systemInfo.os = `macOS ${macosVersion}`;
+    } else if (os.platform() === 'linux') {
+      // Linux - try to get distribution info
+      try {
+        const osRelease = execSync('cat /etc/os-release', { encoding: 'utf8' });
+        const prettyName = osRelease.match(/PRETTY_NAME="(.+?)"/);
+        if (prettyName && prettyName[1]) {
+          systemInfo.os = prettyName[1];
+        }
+      } catch (e) {
+        // Fallback to basic info if /etc/os-release is not available
+      }
+    } else if (os.platform() === 'win32') {
+      // Windows - get version info
+      try {
+        const winVer = execSync('ver', { encoding: 'utf8' }).trim();
+        systemInfo.os = winVer;
+      } catch (e) {
+        // Fallback to basic Windows info
+      }
+    }
+  } catch (e) {
+    // Fallback to basic OS info if any command fails
+  }
+  
+  // Try to get .NET version
+  try {
+    const dotnetVersionOutput = execSync('dotnet --version', { encoding: 'utf8' }).trim();
+    systemInfo.dotnetVersion = dotnetVersionOutput;
+    
+    // Try to get .NET runtime version for more details
+    try {
+      const dotnetInfo = execSync('dotnet --info', { encoding: 'utf8' });
+      const runtimeMatch = dotnetInfo.match(/Runtime Environment:[^\n]*\n\s*(.+)/);
+      if (runtimeMatch && runtimeMatch[1]) {
+        systemInfo.dotnetRuntimeVersion = runtimeMatch[1].trim();
+      }
+    } catch (e) {
+      // Use basic version if --info fails
+    }
+  } catch (e) {
+    systemInfo.dotnetVersion = 'Unknown';
+  }
+  
+  // Try to get oha version
+  try {
+    const ohaVersionOutput = execSync('oha --version', { encoding: 'utf8' }).trim();
+    systemInfo.ohaVersion = ohaVersionOutput;
+  } catch (e) {
+    systemInfo.ohaVersion = 'Unknown';
+  }
+  
+  return systemInfo;
+}
+
 // Main function to run all benchmarks
 async function runAllBenchmarks() {
   console.log('📊 Starting .NET Async Nightmare Benchmarks');
+  console.log('===========================================');
+  
+  // Collect system information
+  console.log('Collecting system information...');
+  const systemInfo = await collectSystemInfo();
+  console.log(`OS: ${systemInfo.os}`);
+  console.log(`CPU: ${systemInfo.cpuModel} (${systemInfo.cpuCores} cores)`);
+  console.log(`Memory: ${systemInfo.freeMemoryGB}GB free / ${systemInfo.totalMemoryGB}GB total`);
+  console.log(`Dotnet: ${systemInfo.dotnetVersion}`);
+  console.log(`Node: ${process.version}`);
+  console.log(`Date: ${systemInfo.date} ${systemInfo.time}`);
   console.log('===========================================');
   
   // Check if oha is installed
@@ -463,8 +558,14 @@ async function runAllBenchmarks() {
     console.log('   Check server log files for details on failures.');
   }
   
+  // Add system info to the benchmark data
+  const completeResults = {
+    systemInfo,
+    benchmarks: results
+  };
+  
   // Save results to file
-  fs.writeFileSync(DATA_FILE, JSON.stringify(results, null, 2));
+  fs.writeFileSync(DATA_FILE, JSON.stringify(completeResults, null, 2));
   console.log(`\n✅ Benchmarks complete. Results saved to ${DATA_FILE}`);
   
   // If we have at least one valid result, proceed
