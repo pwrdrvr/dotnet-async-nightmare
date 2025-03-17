@@ -18,6 +18,34 @@ cleanup() {
   echo "Cleanup complete."
 }
 
+# Help function
+show_help() {
+  echo "Async Nightmare Benchmark Runner"
+  echo "--------------------------------"
+  echo "Usage: ./run.sh [OPTION]"
+  echo ""
+  echo "Options:"
+  echo "  --test      Run with sample data instead of real benchmarks (much faster)"
+  echo "  --clean     Terminate any lingering server processes and exit"
+  echo "  --help      Show this help message and exit"
+  echo ""
+  echo "Examples:"
+  echo "  ./run.sh                     # Run full benchmarks and generate charts"
+  echo "  ./run.sh --test              # Use sample data to generate charts quickly"
+  echo "  ./run.sh --clean             # Clean up any lingering processes"
+  echo ""
+  echo "Notes:"
+  echo "- Full benchmarks take 5-10 minutes to complete"
+  echo "- Server logs are saved to server-*.log files"
+  echo "- Screenshots should be saved to the screenshots/ directory"
+}
+
+# Check if --help flag is provided
+if [ "$1" == "--help" ]; then
+  show_help
+  exit 0
+fi
+
 # Check if --clean flag is provided
 if [ "$1" == "--clean" ]; then
   cleanup
@@ -41,16 +69,29 @@ else
   # Run benchmarks
   node run-benchmarks.js
   
-  # Generate charts
-  node generate-charts.js
-  
-  # Open the HTML file in the default browser
-  if command -v open > /dev/null; then
-    open charts.html
-  elif command -v xdg-open > /dev/null; then
-    xdg-open charts.html
+  # Check if benchmark run was successful
+  if [ $? -eq 0 ]; then
+    # Generate charts if benchmarks were successful
+    echo "Generating charts from benchmark data..."
+    node generate-charts.js
+    
+    # Open the HTML file in the default browser
+    if command -v open > /dev/null; then
+      open charts.html
+    elif command -v xdg-open > /dev/null; then
+      xdg-open charts.html
+    else
+      echo "Please open charts.html in your browser to view the results."
+    fi
+    
+    # Mention server logs
+    echo ""
+    echo "Server logs are available in server-*.log files for debugging."
   else
-    echo "Please open charts.html in your browser to view the results."
+    echo ""
+    echo "❌ Benchmark run failed. Check server-*.log files for details."
+    echo "You can try again or use ./run.sh --test to generate charts with sample data."
+    exit 1
   fi
   
   echo ""

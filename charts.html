@@ -82,9 +82,9 @@
      The tests measure how various settings affect request throughput and CPU efficiency.</p>
   
   <div class="highlight-box">
-    <h3>Key Finding: 5.0x Improvement in Efficiency!</h3>
+    <h3>Key Finding: 4.4x Improvement in Efficiency!</h3>
     <p>By limiting worker threads to 1 and disabling semaphore spinning, we achieved 
-       <strong>5.0x more requests per CPU core</strong> compared to the default configuration.</p>
+       <strong>4.4x more requests per CPU core</strong> compared to the default configuration.</p>
   </div>
   
   <div class="metric-grid">
@@ -95,12 +95,12 @@
     </div>
     <div class="metric-card">
       <div class="metric-label">Maximum Throughput</div>
-      <div class="metric-value">135,000 req/sec</div>
+      <div class="metric-value">135,745.276 req/sec</div>
       <div>Highest raw request throughput</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Best Efficiency</div>
-      <div class="metric-value">104,167 req/sec/core</div>
+      <div class="metric-value">91,822 req/sec/core</div>
       <div>Highest throughput per CPU core used</div>
     </div>
   </div>
@@ -133,49 +133,49 @@
         <tr>
           <td>Single Worker Thread</td>
           <td>1 worker thread, no semaphore spin, oha with 2 threads</td>
-          <td>125,000</td>
+          <td>110,186</td>
           <td>120%</td>
-          <td>104,167 <span class="fire-emoji">🔥</span></td>
+          <td>91,822 <span class="fire-emoji">🔥</span></td>
         </tr>
       
         <tr>
           <td>No Semaphore Spin</td>
           <td>Disabling Semaphore spinning</td>
-          <td>125,000</td>
+          <td>125,453</td>
           <td>300%</td>
-          <td>41,667 </td>
+          <td>41,818 </td>
         </tr>
       
         <tr>
           <td>No Spin + Tokio 2 Threads</td>
           <td>No semaphore spin with oha limited to 2 threads</td>
-          <td>130,000</td>
+          <td>126,823</td>
           <td>330%</td>
-          <td>39,394 </td>
+          <td>38,431 </td>
         </tr>
       
         <tr>
           <td>No Spin + Tokio 1 Thread</td>
           <td>No semaphore spin with oha limited to 1 thread</td>
-          <td>90,000</td>
+          <td>113,575</td>
           <td>300%</td>
-          <td>30,000 </td>
-        </tr>
-      
-        <tr>
-          <td>Base Case</td>
-          <td>Default configuration</td>
-          <td>135,000</td>
-          <td>650%</td>
-          <td>20,769 </td>
+          <td>37,858 </td>
         </tr>
       
         <tr>
           <td>Tokio 1 Thread</td>
           <td>Default config with oha limited to 1 thread</td>
-          <td>100,000</td>
-          <td>700%</td>
-          <td>14,286 </td>
+          <td>112,339</td>
+          <td>300%</td>
+          <td>37,446 </td>
+        </tr>
+      
+        <tr>
+          <td>Base Case</td>
+          <td>Default configuration</td>
+          <td>135,745</td>
+          <td>650%</td>
+          <td>20,884 </td>
         </tr>
       
     </tbody>
@@ -195,7 +195,7 @@
   
   <script>
     // Load the benchmark data
-    const data = [{"summary":{"requestsPerSec":125000,"latencyMean":0.0016,"latencyP50":0.0011,"latencyP90":0.0028,"latencyP99":0.006},"cpuUsage":120,"rpsPerCore":104167,"config":{"name":"Single Worker Thread","description":"1 worker thread, no semaphore spin, oha with 2 threads","env":{"LAMBDA_DISPATCH_MaxWorkerThreads":"1","DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"requestsPerSec":125000,"latencyMean":0.0015,"latencyP50":0.001,"latencyP90":0.0025,"latencyP99":0.005},"cpuUsage":300,"rpsPerCore":41667,"config":{"name":"No Semaphore Spin","description":"Disabling Semaphore spinning","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{}}},{"summary":{"requestsPerSec":130000,"latencyMean":0.0014,"latencyP50":0.001,"latencyP90":0.0025,"latencyP99":0.005},"cpuUsage":330,"rpsPerCore":39394,"config":{"name":"No Spin + Tokio 2 Threads","description":"No semaphore spin with oha limited to 2 threads","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"requestsPerSec":90000,"latencyMean":0.002,"latencyP50":0.0015,"latencyP90":0.0035,"latencyP99":0.008},"cpuUsage":300,"rpsPerCore":30000,"config":{"name":"No Spin + Tokio 1 Thread","description":"No semaphore spin with oha limited to 1 thread","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}},{"summary":{"requestsPerSec":135000,"latencyMean":0.0014,"latencyP50":0.001,"latencyP90":0.0025,"latencyP99":0.005},"cpuUsage":650,"rpsPerCore":20769,"config":{"name":"Base Case","description":"Default configuration","env":{},"ohaEnv":{}}},{"summary":{"requestsPerSec":100000,"latencyMean":0.0018,"latencyP50":0.0012,"latencyP90":0.003,"latencyP99":0.006},"cpuUsage":700,"rpsPerCore":14286,"config":{"name":"Tokio 1 Thread","description":"Default config with oha limited to 1 thread","env":{},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}}];
+    const data = [{"summary":{"successRate":1,"total":30.000488709,"slowest":0.013530167,"fastest":0.000027917,"average":0.00018091290155368016,"requestsPerSec":110186.3716976158,"totalData":13222516,"sizePerRequest":4,"sizePerSec":440743.353491882},"responseTimeHistogram":{"0.000027917":1,"0.0013781419999999997":3304974,"0.0027283669999999998":428,"0.004078591999999999":103,"0.005428816999999999":43,"0.006779041999999999":0,"0.008129266999999999":0,"0.009479491999999999":37,"0.010829716999999999":11,"0.012179942":19,"0.013530167":13},"latencyPercentiles":{"p10":0.00013925,"p25":0.00015875,"p50":0.000179041,"p75":0.000197708,"p90":0.000218375,"p95":0.000237,"p99":0.0002825,"p99.9":0.000565417,"p99.99":0.002349042},"rps":{"mean":110102.25977276803,"stddev":12627.225489036317,"max":130143.15747322021,"min":1501.200960768548,"percentiles":{"p10":107184.1185080451,"p25":109102.72756820402,"p50":111359.1332045904,"p75":115223.02447860184,"p90":119399.97732911799,"p95":121825.37622587095,"p99":126521.25797363136,"p99.9":129599.3638322557,"p99.99":130143.15747322021}},"details":{"DNSDialup":{"average":0.0004998667999999999,"fastest":0.000435167,"slowest":0.000542084},"DNSLookup":{"average":0.000004354250000000001,"fastest":9.16e-7,"slowest":0.000037833}},"statusCodeDistribution":{"200":3305629},"errorDistribution":{"aborted due to deadline":16},"cpuUsage":120,"rpsPerCore":91822,"config":{"name":"Single Worker Thread","description":"1 worker thread, no semaphore spin, oha with 2 threads","env":{"LAMBDA_DISPATCH_MaxWorkerThreads":"1","DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"successRate":1,"total":30.000881375,"slowest":0.00945625,"fastest":0.000032,"average":0.0001574205745908976,"requestsPerSec":125452.51430967335,"totalData":15054732,"sizePerRequest":4,"sizePerSec":501809.6572504447},"responseTimeHistogram":{"0.000032":1,"0.0009744249999999999":3763007,"0.0019168499999999997":488,"0.0028592749999999997":120,"0.0038016999999999994":26,"0.004744124999999999":7,"0.005686549999999999":14,"0.006628974999999999":0,"0.007571399999999999":1,"0.008513825":4,"0.00945625":15},"latencyPercentiles":{"p10":0.000105125,"p25":0.000128458,"p50":0.000155291,"p75":0.000182625,"p90":0.000207917,"p95":0.000224042,"p99":0.000263208,"p99.9":0.00051225,"p99.99":0.001314333},"rps":{"mean":125434.98492855948,"stddev":11014.55214601148,"max":140156.06242495592,"min":2207.0792065548408,"percentiles":{"p10":117902.46416150055,"p25":123566.57259426745,"p50":127721.82766034087,"p75":130640.43847135302,"p90":132705.53382077313,"p95":133922.8740268761,"p99":136104.3512060271,"p99.9":138470.96637026072,"p99.99":140156.06242495592}},"details":{"DNSDialup":{"average":0.0004900895,"fastest":0.000372917,"slowest":0.000633208},"DNSLookup":{"average":0.000048170799999999996,"fastest":0.000001958,"slowest":0.00013975}},"statusCodeDistribution":{"200":3763683},"errorDistribution":{"aborted due to deadline":3},"cpuUsage":300,"rpsPerCore":41818,"config":{"name":"No Semaphore Spin","description":"Disabling Semaphore spinning","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{}}},{"summary":{"successRate":1,"total":30.000338875,"slowest":0.003127084,"fastest":0.000028709,"average":0.00015688524132403609,"requestsPerSec":126823.20075959475,"totalData":15218940,"sizePerRequest":4,"sizePerSec":507292.26971107005},"responseTimeHistogram":{"0.000028709":1,"0.00033854649999999996":3796216,"0.000648384":7388,"0.0009582214999999999":607,"0.001268059":201,"0.0015778965":154,"0.0018877339999999999":42,"0.0021975715":40,"0.002507409":37,"0.0028172465":20,"0.003127084":29},"latencyPercentiles":{"p10":0.000112458,"p25":0.000131625,"p50":0.000153667,"p75":0.000177583,"p90":0.000203084,"p95":0.000221292,"p99":0.000264375,"p99.9":0.000432459,"p99.99":0.001150333},"rps":{"mean":126821.79918890298,"stddev":8507.604047229013,"max":138187.69200263964,"min":26607.870969705215,"percentiles":{"p10":121127.25363206553,"p25":125830.92924239907,"p50":128508.55867001065,"p75":130508.70493062324,"p90":132218.44127969534,"p95":133224.97968370147,"p99":134847.76618217115,"p99.9":137121.6955047728,"p99.99":138187.69200263964}},"details":{"DNSDialup":{"average":0.000492425,"fastest":0.000459167,"slowest":0.0005575},"DNSLookup":{"average":0.000010991749999999999,"fastest":8.75e-7,"slowest":0.000104667}},"statusCodeDistribution":{"200":3804735},"errorDistribution":{"aborted due to deadline":4},"cpuUsage":330,"rpsPerCore":38431,"config":{"name":"No Spin + Tokio 2 Threads","description":"No semaphore spin with oha limited to 2 threads","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"successRate":1,"total":30.001102916,"slowest":0.039430792,"fastest":0.000036334,"average":0.00017580652827970934,"requestsPerSec":113575.05787504895,"totalData":13629492,"sizePerRequest":4,"sizePerSec":454299.69818646915},"responseTimeHistogram":{"0.000036334":1,"0.0039757798":3407329,"0.0079152256":23,"0.0118546714":0,"0.0157941172":0,"0.019733563":0,"0.0236730088":0,"0.0276124546":0,"0.0315519004":0,"0.035491346199999996":0,"0.039430792":20},"latencyPercentiles":{"p10":0.000135041,"p25":0.00015675,"p50":0.000175666,"p75":0.000194083,"p90":0.00021325,"p95":0.000226875,"p99":0.000258584,"p99.9":0.000365791,"p99.99":0.001369459},"rps":{"mean":113674.99949422208,"stddev":6348.53082332619,"max":126813.21393688445,"min":25.5186128551607,"percentiles":{"p10":110428.98760923544,"p25":112205.19236786071,"p50":113994.64527273319,"p75":115974.53299664134,"p90":118082.65786050593,"p95":119534.86832108904,"p99":122165.16289788041,"p99.9":126333.69319596067,"p99.99":126813.21393688445}},"details":{"DNSDialup":{"average":0.00045087070000000005,"fastest":0.000343333,"slowest":0.000509917},"DNSLookup":{"average":0.0000020270500000000008,"fastest":7.91e-7,"slowest":0.000022917}},"statusCodeDistribution":{"200":3407373},"errorDistribution":{"aborted due to deadline":4},"cpuUsage":300,"rpsPerCore":37858,"config":{"name":"No Spin + Tokio 1 Thread","description":"No semaphore spin with oha limited to 1 thread","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}},{"summary":{"successRate":1,"total":30.000326084,"slowest":0.019686209,"fastest":0.000036125,"average":0.00017773186378926324,"requestsPerSec":112338.94560224206,"totalData":13480816,"sizePerRequest":4,"sizePerSec":449355.6490770842},"responseTimeHistogram":{"0.000036125":1,"0.0020011334":3369837,"0.0039661418":182,"0.0059311502":66,"0.0078961586":51,"0.009861166999999999":34,"0.0118261754":19,"0.0137911838":2,"0.0157561922":3,"0.0177212006":7,"0.019686209":2},"latencyPercentiles":{"p10":0.0001295,"p25":0.0001505,"p50":0.000169833,"p75":0.000188042,"p90":0.000210709,"p95":0.000240208,"p99":0.000453208,"p99.9":0.000594041,"p99.99":0.002075583},"rps":{"mean":112289.26569546266,"stddev":16029.56671064471,"max":141029.96886838702,"min":712.154120732246,"percentiles":{"p10":91690.9298951614,"p25":110757.21717839428,"p50":116732.49611250371,"p75":120988.5364363493,"p90":125439.71421351082,"p95":127723.94824030538,"p99":130854.85363379796,"p99.9":134848.8827199852,"p99.99":141029.96886838702}},"details":{"DNSDialup":{"average":0.0005206791499999999,"fastest":0.000362,"slowest":0.00060275},"DNSLookup":{"average":0.0000023353999999999993,"fastest":7.91e-7,"slowest":0.000027875}},"statusCodeDistribution":{"200":3370204},"errorDistribution":{"aborted due to deadline":1},"cpuUsage":300,"rpsPerCore":37446,"config":{"name":"Tokio 1 Thread","description":"Default config with oha limited to 1 thread","env":{},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}},{"summary":{"successRate":1,"total":30.001640625,"slowest":0.013447958,"fastest":0.000030541,"average":0.0001450795424270586,"requestsPerSec":135745.27643019523,"totalData":16290316,"sizePerRequest":4,"sizePerSec":542980.8390686967},"responseTimeHistogram":{"0.000030541":1,"0.0013722826999999999":4071865,"0.0027140243999999995":507,"0.0040557661":115,"0.0053975078":29,"0.006739249499999999":19,"0.0080809912":17,"0.0094227329":13,"0.010764474599999999":2,"0.012106216299999998":10,"0.013447957999999998":1},"latencyPercentiles":{"p10":0.000100584,"p25":0.000119209,"p50":0.000141083,"p75":0.000165167,"p90":0.000189958,"p95":0.000206792,"p99":0.000251042,"p99.9":0.0005055,"p99.99":0.001815},"rps":{"mean":135709.7232247345,"stddev":10777.774667047728,"max":150715.07150714265,"min":6115.160706423255,"percentiles":{"p10":129290.50335237355,"p25":134078.77127814424,"p50":137760.14616988818,"p75":140257.2670421408,"p90":142367.62462170463,"p95":143713.77278080254,"p99":146110.35922447275,"p99.9":149708.72801879764,"p99.99":150715.07150714265}},"details":{"DNSDialup":{"average":0.0019418334000000002,"fastest":0.001511208,"slowest":0.002404167},"DNSLookup":{"average":0.0002784063,"fastest":0.000001375,"slowest":0.000594}},"statusCodeDistribution":{"200":4072579},"errorDistribution":{"aborted due to deadline":2},"cpuUsage":650,"rpsPerCore":20884,"config":{"name":"Base Case","description":"Default configuration","env":{},"ohaEnv":{}}}];
     
     // Chart colors
     const colors = [
@@ -212,10 +212,10 @@
     new Chart(rpsCtx, {
       type: 'bar',
       data: {
-        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Tokio 1 Thread","Base Case"],
         datasets: [{
           label: 'Requests per Second',
-          data: [125000,125000,130000,90000,135000,100000],
+          data: [110186.3716976158,125452.51430967335,126823.20075959475,113575.05787504895,112338.94560224206,135745.27643019523],
           backgroundColor: colors,
           borderColor: colors.map(c => c.replace('0.8', '1')),
           borderWidth: 1
@@ -251,10 +251,10 @@
     new Chart(cpuCtx, {
       type: 'bar',
       data: {
-        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Tokio 1 Thread","Base Case"],
         datasets: [{
           label: 'CPU Usage (%)',
-          data: [120,300,330,300,650,700],
+          data: [120,300,330,300,300,650],
           backgroundColor: colors,
           borderColor: colors.map(c => c.replace('0.8', '1')),
           borderWidth: 1
@@ -290,10 +290,10 @@
     new Chart(efficiencyCtx, {
       type: 'bar',
       data: {
-        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Tokio 1 Thread","Base Case"],
         datasets: [{
           label: 'Requests per Second per CPU Core',
-          data: [104167,41667,39394,30000,20769,14286],
+          data: [91822,41818,38431,37858,37446,20884],
           backgroundColor: colors,
           borderColor: colors.map(c => c.replace('0.8', '1')),
           borderWidth: 1

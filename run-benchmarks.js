@@ -59,10 +59,11 @@ async function runBenchmark(config) {
   console.log(`\n🏃 Running benchmark: ${config.name}`);
   console.log(`   ${config.description}`);
   
-  // Prepare environment variables for dotnet
-  const dotnetEnvString = Object.entries(config.env)
-    .map(([key, value]) => `${key}=${value}`)
-    .join(' ');
+  // Prepare environment variables for dotnet (proper object format)
+  const dotnetEnv = {
+    ...process.env, // Include current environment
+    ...config.env   // Add our specific variables
+  };
   
   // Prepare environment variables for oha
   const ohaEnvString = Object.entries(config.ohaEnv)
@@ -71,27 +72,47 @@ async function runBenchmark(config) {
   
   // Start the application
   console.log('   Starting application...');
+  
+  // Create a log file for the server output
+  const logFile = fs.openSync(`server-${config.name.replace(/\s+/g, '-').toLowerCase()}.log`, 'w');
+  
   let dotnetProcess;
   try {
+    // Kill any existing processes that might be using the port
+    try {
+      execSync(`lsof -i:5001 -t | xargs kill -9`, { stdio: 'ignore' });
+    } catch (e) {
+      // Ignore errors - no processes may be using the port
+    }
+    
+    // Wait a bit to ensure port is released
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Start the server directly with environment variables in the env option
     dotnetProcess = require('child_process').spawn(
-      'bash',
-      ['-c', `${dotnetEnvString} ./bin/Release/net8.0/web`],
+      './bin/Release/net8.0/web',
+      [], // No arguments needed
       { 
-        stdio: 'ignore',
+        stdio: ['ignore', logFile, logFile],
         detached: true,
-        shell: true
+        shell: false, // Don't use shell
+        env: dotnetEnv // Pass environment variables properly
       }
     );
+    
     // Store the process ID for later termination
     const pid = dotnetProcess.pid;
     console.log(`   Server started with PID: ${pid}`);
+    
+    // Wait for server to start
+    console.log('   Waiting for server to start...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
   } catch (error) {
     console.error('   Failed to start server:', error);
+    fs.closeSync(logFile);
     return null;
   }
-  
-  // Give the server time to start
-  await new Promise(resolve => setTimeout(resolve, 3000));
   
   // Test if the server is running
   try {
@@ -167,36 +188,54 @@ async function runBenchmark(config) {
     console.error('   Benchmark failed:', error.message);
     results = null;
   } finally {
-    // Terminate the server
+    // Close the log file
     try {
-      if (dotnetProcess && dotnetProcess.pid) {
-        console.log('   Terminating server...');
-        // Try different approaches to terminate the server
-        try {
-          // First try to kill the process group
-          process.kill(-dotnetProcess.pid, 'SIGTERM');
-        } catch (e) {
-          try {
-            // Then try to kill just the process
-            process.kill(dotnetProcess.pid, 'SIGTERM');
-          } catch (e2) {
-            // As a last resort, use execSync to kill the process
-            try {
-              // Use a very specific pattern to avoid killing unrelated processes
-              execSync(`pkill -f "bin/Release/net8\\.0/web$"`);
-            } catch (e3) {
-              console.log('   Could not terminate server, it may have already exited.');
-            }
-          }
-        }
+      if (logFile) {
+        fs.closeSync(logFile);
       }
-    } catch (error) {
-      console.log('   Server may have already terminated.');
+    } catch (e) {
+      // Ignore log file close errors
     }
+    
+    // Terminate the server more reliably
+    console.log('   Terminating server...');
+    
+    // Try multiple termination methods in sequence to ensure cleanup
+    // Method 1: Kill by PID if we have one
+    if (dotnetProcess && dotnetProcess.pid) {
+      try {
+        process.kill(dotnetProcess.pid, 'SIGTERM');
+        console.log(`   Sent SIGTERM to PID ${dotnetProcess.pid}`);
+      } catch (e) {
+        console.log(`   Could not terminate PID ${dotnetProcess.pid}, trying alternative methods`);
+      }
+    }
+    
+    // Method 2: Use lsof to find and kill any process on port 5001
+    try {
+      const output = execSync('lsof -i:5001 -t', { encoding: 'utf8' });
+      if (output.trim()) {
+        console.log(`   Found processes on port 5001: ${output.trim()}`);
+        execSync(`lsof -i:5001 -t | xargs kill -9`);
+        console.log('   Killed processes using port 5001');
+      }
+    } catch (e) {
+      // No processes may be using the port - that's fine
+    }
+    
+    // Method 3: Use pkill as a last resort
+    try {
+      execSync(`pkill -f "bin/Release/net8\\.0/web$"`, { stdio: 'ignore' });
+    } catch (e) {
+      // Process may not exist - that's fine
+    }
+    
+    console.log('   Cleanup complete, waiting before next test...');
   }
   
-  // Wait a bit before starting the next benchmark
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  // Increase wait time between benchmarks to ensure complete cleanup
+  console.log('   Pausing for 1 seconds before next benchmark...');
+  await new Promise(resolve => setTimeout(resolve, 1000));
   
   return results;
 }
@@ -235,9 +274,30 @@ async function runAllBenchmarks() {
     }
   }
   
+  // Save results to file only if we have valid data
+  if (results.length === 0) {
+    console.error('\n❌ All benchmarks failed. No data to save.');
+    process.exit(1);
+  }
+  
+  // Log a summary of completed benchmarks
+  console.log('\n--- Benchmark Summary ---');
+  results.forEach(result => {
+    console.log(`${result.config.name}: ${Math.round(result.summary.requestsPerSec).toLocaleString()} req/sec, ${result.cpuUsage}% CPU, ${result.rpsPerCore.toLocaleString()} req/sec/core`);
+  });
+  
+  // Check for missing benchmark configurations
+  if (results.length < configurations.length) {
+    console.log(`\n⚠️  Note: ${configurations.length - results.length} benchmarks failed to complete.`);
+    console.log('   Check server log files for details on failures.');
+  }
+  
   // Save results to file
   fs.writeFileSync(DATA_FILE, JSON.stringify(results, null, 2));
   console.log(`\n✅ Benchmarks complete. Results saved to ${DATA_FILE}`);
+  
+  // If we have at least one valid result, proceed
+  return results.length > 0;
 }
 
 // Run the benchmarks

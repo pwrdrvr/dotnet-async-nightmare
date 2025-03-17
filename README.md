@@ -23,10 +23,13 @@ You can generate these charts with real benchmarks on your system by running:
 # npm install -g node@20
 # cargo install oha
 
+# Get help and see all available options
+./run.sh --help
+
 # Run benchmarks and generate visualizations
 ./run.sh
 
-# Or test with sample data without running benchmarks
+# Or test with sample data without running benchmarks (much faster)
 ./run.sh --test
 
 # Clean up any lingering processes if needed
