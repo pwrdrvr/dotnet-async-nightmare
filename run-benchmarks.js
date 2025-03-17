@@ -15,39 +15,45 @@ const DATA_FILE = path.join(__dirname, 'benchmark-data.json');
 const configurations = [
   {
     name: 'Base Case',
-    description: 'Default configuration',
-    env: {},
-    ohaEnv: {}
-  },
-  {
-    name: 'No Semaphore Spin',
-    description: 'Disabling Semaphore spinning',
-    env: { 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0' },
-    ohaEnv: {}
-  },
-  {
-    name: 'Tokio 1 Thread',
-    description: 'Default config with oha limited to 1 thread',
+    description: 'Default .NET worker threads, default semaphore spin, oha with 1 thread',
     env: {},
     ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
   },
   {
-    name: 'No Spin + Tokio 1 Thread',
-    description: 'No semaphore spin with oha limited to 1 thread',
+    name: 'No Spin',
+    description: 'Default .NET worker threads, no semaphore spin, oha with 1 thread',
     env: { 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0' },
     ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
   },
   {
-    name: 'No Spin + Tokio 2 Threads',
-    description: 'No semaphore spin with oha limited to 2 threads',
-    env: { 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0' },
+    name: 'Spin 10',
+    description: 'Default .NET worker threads, semaphore spin 10, oha with 1 thread',
+    env: { 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '10' },
+    ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
+  },
+  {
+    name: '1 .NET Thread, oha 1',
+    description: '1 .NET worker threads, no semaphore spin, oha with 1 thread',
+    env: { 
+      'LAMBDA_DISPATCH_MaxWorkerThreads': '1',
+      'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0'
+    },
+    ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
+  },
+  {
+    name: '1 .NET Threads, oha 2',
+    description: '1 .NET worker threads, no semaphore spin, oha with 2 threads',
+    env: { 
+      'LAMBDA_DISPATCH_MaxWorkerThreads': '1',
+      'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0'
+    },
     ohaEnv: { 'TOKIO_WORKER_THREADS': '2' }
   },
   {
-    name: 'Single Worker Thread',
-    description: '1 worker thread, no semaphore spin, oha with 2 threads',
+    name: '2 .NET Threads - oha 2',
+    description: '2 .NET worker threads, no semaphore spin, oha with 2 threads',
     env: { 
-      'LAMBDA_DISPATCH_MaxWorkerThreads': '1',
+      'LAMBDA_DISPATCH_MaxWorkerThreads': '2',
       'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0'
     },
     ohaEnv: { 'TOKIO_WORKER_THREADS': '2' }
@@ -248,17 +254,17 @@ async function runBenchmark(config) {
     let maxCpu = -Infinity;
     
     if (cpuSamples.length > 2) {
-      // Calculate statistics
-      const allCpuValues = [...cpuSamples]; // Copy all samples
-      allCpuValues.forEach(sample => {
-        minCpu = Math.min(minCpu, sample);
-        maxCpu = Math.max(maxCpu, sample);
-      });
-      
       // Remove first and last samples for the average (they're outliers)
       const middleSamples = cpuSamples.slice(1, -1);
       const sum = middleSamples.reduce((total, val) => total + val, 0);
       measuredCpuPercent = sum / middleSamples.length;
+
+      // Calculate statistics
+      const allCpuValues = [...middleSamples]; // Copy all samples
+      allCpuValues.forEach(sample => {
+        minCpu = Math.min(minCpu, sample);
+        maxCpu = Math.max(maxCpu, sample);
+      });
       
       console.log(`   CPU sampling statistics:`);
       console.log(`   - Samples taken: ${cpuSamples.length}`);
@@ -448,7 +454,7 @@ async function runAllBenchmarks() {
   // Log a summary of completed benchmarks
   console.log('\n--- Benchmark Summary ---');
   results.forEach(result => {
-    console.log(`${result.config.name}: ${Math.round(result.summary.requestsPerSec).toLocaleString()} req/sec, ${result.cpuUsage}% CPU, ${result.rpsPerCore.toLocaleString()} req/sec/core`);
+    console.log(`${result.config.name}: ${Math.round(result.summary.requestsPerSec).toLocaleString()} req/sec, ${Math.round(result.cpuUsage)}% CPU, ${result.rpsPerCore.toLocaleString()} req/sec/core`);
   });
   
   // Check for missing benchmark configurations

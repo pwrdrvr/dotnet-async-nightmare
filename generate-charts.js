@@ -126,7 +126,7 @@ function generateChartsHtml(data) {
     </div>
     <div class="metric-card">
       <div class="metric-label">Maximum Throughput</div>
-      <div class="metric-value">${Math.max(...rpsData).toLocaleString()} req/sec</div>
+      <div class="metric-value">${Math.round(Math.max(...rpsData)).toLocaleString()} req/sec</div>
       <div>Highest raw request throughput</div>
     </div>
     <div class="metric-card">
