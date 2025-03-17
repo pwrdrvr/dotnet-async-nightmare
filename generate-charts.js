@@ -153,6 +153,7 @@ function generateChartsHtml(data) {
 </head>
 <body>
   <h1>.NET Async Thread Pool Performance</h1>
+  <p style="text-align: center;"><a href="https://github.com/pwrdrvr/dotnet-async-nightmare" target="_blank">View on GitHub</a></p>
   
   ${hasSystemInfo ? `
   <details>

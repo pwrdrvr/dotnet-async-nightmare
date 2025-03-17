@@ -63,6 +63,16 @@ Original source for thread pool control function: [Program.cs](https://github.co
 
 Details of 700% CPU usage for a dotnet reverse proxy to send 17k RPS to a Node.js express server using less than 100% CPU: https://github.com/pwrdrvr/lambda-dispatch/issues/109
 
+### .NET Runtime Source Code References
+
+The specific cause of the issue can be traced to these parts of the .NET Runtime source code:
+
+- **PortableThreadPool.WorkerThread** - Location where Unfair semaphore spin limit can override the default: [View source](https://github.com/dotnet/runtime/blob/599996a65fd7c4e239215bcea460bf8a23303dae/src/libraries/System.Private.CoreLib/src/System/Threading/PortableThreadPool.WorkerThread.cs#L53C21-L58)
+
+- **PortableThreadPool.WorkerThread** - Location where SemaphoreSpinCountDefaultBaseline is set to 70, but set to 4 * 70 = 280 on ARM platforms: [View source](https://github.com/dotnet/runtime/blob/599996a65fd7c4e239215bcea460bf8a23303dae/src/libraries/System.Private.CoreLib/src/System/Threading/PortableThreadPool.WorkerThread.cs#L18-L27)
+
+- **LowLevelLifoSempahore** - Location where spinCount appears to be doubled again on Unix platforms (potentially boosting this to 560 on Mac ARM?): [View source](https://github.com/dotnet/runtime/blob/599996a65fd7c4e239215bcea460bf8a23303dae/src/libraries/System.Private.CoreLib/src/System/Threading/LowLevelLifoSemaphore.cs#L97-L100)
+
 ## Running Locally
 
 ### Install DotNet 8.0 SDK
@@ -99,6 +109,8 @@ node generate-charts.js
 
 ### Manually Testing
 
+<details>
+<summary>Click to expand</summary>
 #### Run
 
 ```bash
@@ -156,3 +168,4 @@ TOKIO_WORKER_THREADS=1 oha -c 20 -z 60s http://localhost:5001/user/1234
 # Load test with 1 Tokio runtime thread - 100 concurrent sockets
 TOKIO_WORKER_THREADS=1 oha -c 100 -z 60s http://localhost:5001/user/1234
 ```
+</details>
