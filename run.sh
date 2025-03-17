@@ -14,7 +14,7 @@ cleanup() {
   echo "Cleaning up processes..."
   # Try to terminate only the specific dotnet web server process
   # Use a more specific pattern to avoid killing unrelated processes
-  pkill -f "bin/Release/net8\.0/web$" || true
+  pkill -f "src/web/bin/Release/net8\.0/web$" || true
   echo "Cleanup complete."
 }
 

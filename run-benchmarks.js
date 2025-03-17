@@ -96,7 +96,7 @@ async function runBenchmark(config) {
     
     // Start the server directly with environment variables in the env option
     dotnetProcess = require('child_process').spawn(
-      './bin/Release/net8.0/web',
+      './src/web/bin/Release/net8.0/web',
       [], // No arguments needed
       { 
         stdio: ['ignore', logFile, logFile],
@@ -396,7 +396,7 @@ async function runBenchmark(config) {
     
     // Method 3: Use pkill as a last resort
     try {
-      execSync(`pkill -f "bin/Release/net8\\.0/web$"`, { stdio: 'ignore' });
+      execSync(`pkill -f "src/web/bin/Release/net8\\.0/web$"`, { stdio: 'ignore' });
     } catch (e) {
       // Process may not exist - that's fine
     }
@@ -521,10 +521,10 @@ async function runAllBenchmarks() {
   }
   
   // Check if the application is built
-  if (!fs.existsSync('./bin/Release/net8.0/web')) {
+  if (!fs.existsSync('./src/web/bin/Release/net8.0/web')) {
     console.log('Building application...');
     try {
-      execSync('dotnet build -c Release', { stdio: 'inherit' });
+      execSync('cd src/web && dotnet build -c Release', { stdio: 'inherit' });
     } catch (error) {
       console.error('Failed to build the application. Please build it manually.');
       process.exit(1);

@@ -71,7 +71,6 @@ Details of 700% CPU usage for a dotnet reverse proxy to send 17k RPS to a Node.j
 
 ```bash
 dotnet restore
-
 dotnet build -c Release
 ```
 
@@ -81,28 +80,28 @@ dotnet build -c Release
 # Base case - Uses 600-670% CPU to deliver 130k-140k RPS
 # ~22k RPS per CPU core
 # This *as fast* as Node.js with express.js per CPU core
-dotnet run -c Release
+dotnet run -c Release --project src/web/web.csproj
 
 # Disabling Semaphore spinning - Uses 266-320% CPU to deliver 115k-130k RPS
 # ~43k RPS per CPU core
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release --project src/web/web.csproj
 
 # Note on `oha` CPU usage
 # `oha` (Rust) is using 200-300% CPU to geneate the above requests with default Tokio async runtime config
 
 # Limiting `oha` to 1 thread - Uses 700% CPU to deliver 100k RPS
 # 14k RPS per CPU core
-dotnet run -c Release
+dotnet run -c Release --project src/web/web.csproj
 
 # Limiting `oha` to 1 thread and disabling Semaphore spinning - Uses 300% CPU to deliver 90k RPS
 # 30k RPS per CPU core
 # `oha` uses 90% CPU
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release --project src/web/web.csproj
 
 # Limiting `oha` to 2 threads and disabling Semaphore spinning - Uses 330% CPU to deliver 120k-140k RPS
 # 43k RPS per CPU core
 # `oha` uses 160% CPU
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release --project src/web/web.csproj
 
 # Limiting dotnet to 1 thread, disabling Semaphore spinning, and limiting `oha` to 2 threads
 # Uses 114% CPU to deliver 120k-130k RPS
@@ -110,7 +109,7 @@ DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
 # 🔥 4.8x RPS per CPU core compared to base case 🔥
 # `oha` uses 125% CPU
 # Note: 1 thread can get a little wonky with the async completions
- LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
+ LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release --project src/web/web.csproj
 
  # Limitng the IO completion port threads to 1 has no effect on CPU usage
 ```

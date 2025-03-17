@@ -7,9 +7,9 @@ dotnet restore
 dotnet build -c Release
 
 # Run (various configurations)
-./bin/Release/net8.0/web
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net8.0/web
-LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net8.0/web
+./src/web/bin/Release/net8.0/web
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./src/web/bin/Release/net8.0/web
+LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./src/web/bin/Release/net8.0/web
 
 # Test
 curl http://localhost:5001/user/1234
