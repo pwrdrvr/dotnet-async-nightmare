@@ -20,9 +20,9 @@ Original source for thread pool control function: https://github.com/pwrdrvr/lam
 
 Details of 700% CPU usage for a dotnet reverse proxy to send 17k RPS to a Node.js express server using less than 100% CPU: https://github.com/pwrdrvr/lambda-dispatch/issues/109
 
-## Install DotNet 9.0
+## Install DotNet 8.0 SDK
 
-https://dotnet.microsoft.com/en-us/download/dotnet/9.0
+https://dotnet.microsoft.com/en-us/download/dotnet/8.0
 
 ## Build
 
@@ -38,28 +38,28 @@ dotnet build -c Release
 # Base case - Uses 600-670% CPU to deliver 130k-140k RPS
 # ~22k RPS per CPU core
 # This *as fast* as Node.js with express.js per CPU core
-./bin/Release/net9.0/web
+dotnet run -c Release
 
 # Disabling Semaphore spinning - Uses 266-320% CPU to deliver 115k-130k RPS
 # ~43k RPS per CPU core
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net9.0/web
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
 
 # Note on `oha` CPU usage
 # `oha` (Rust) is using 200-300% CPU to geneate the above requests with default Tokio async runtime config
 
 # Limiting `oha` to 1 thread - Uses 700% CPU to deliver 100k RPS
 # 14k RPS per CPU core
-./bin/Release/net9.0/web
+dotnet run -c Release
 
 # Limiting `oha` to 1 thread and disabling Semaphore spinning - Uses 300% CPU to deliver 90k RPS
 # 30k RPS per CPU core
 # `oha` uses 90% CPU
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net9.0/web
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
 
 # Limiting `oha` to 2 threads and disabling Semaphore spinning - Uses 330% CPU to deliver 120k-140k RPS
 # 43k RPS per CPU core
 # `oha` uses 160% CPU
-DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net9.0/web
+DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
 
 # Limiting dotnet to 1 thread, disabling Semaphore spinning, and limiting `oha` to 2 threads
 # Uses 114% CPU to deliver 120k-130k RPS
@@ -67,7 +67,7 @@ DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net9.0/web
 # 🔥 4.8x RPS per CPU core compared to base case 🔥
 # `oha` uses 125% CPU
 # Note: 1 thread can get a little wonky with the async completions
- LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net9.0/web
+ LAMBDA_DISPATCH_MaxWorkerThreads=1 DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
 
  # Limitng the IO completion port threads to 1 has no effect on CPU usage
 ```
@@ -79,8 +79,13 @@ DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 ./bin/Release/net9.0/web
 curl http://localhost:5000/user/1234
 
 # Load Test
+# In this case oha will use too many threads and will be slower with 2x to 3x more CPU usage than necessary
+# Incidentally, this is the same problem that dotnet is having with async task completions / spin waits / work stealing
 oha -c 20 -z 60s http://localhost:5000/user/1234
 
-# Load test with 1 Tokio runtime thread
+# Load test with 1 Tokio runtime thread - 20 concurrent sockets
 TOKIO_WORKER_THREADS=1 oha -c 20 -z 60s http://localhost:5000/user/1234
+
+# Load test with 1 Tokio runtime thread - 100 concurrent sockets
+TOKIO_WORKER_THREADS=1 oha -c 100 -z 60s http://localhost:5000/user/1234
 ```
