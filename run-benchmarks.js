@@ -129,8 +129,54 @@ async function runBenchmark(config) {
   // Run oha benchmark
   let results;
   try {
-    // Run the benchmark and capture output
+    // Get the server PID for CPU monitoring
+    const serverPid = dotnetProcess.pid;
+    console.log(`   Starting CPU monitoring for PID: ${serverPid}`);
+    
+    // Function to sample CPU usage during the benchmark - includes all subprocesses
+    const cpuSamples = [];
+    const sampleCpu = () => {
+      try {
+        // Use ps command to get CPU usage of the entire process tree
+        // This includes the server process and any child processes it spawns
+        const cpuInfo = execSync(`ps -p ${serverPid} -o %cpu | tail -1`, { encoding: 'utf-8' }).trim();
+        
+        // Also check for child processes (if this fails, we still have the main process measurement)
+        try {
+          const childrenInfo = execSync(`pgrep -P ${serverPid} | xargs ps -o %cpu | grep -v CPU | awk '{sum+=$1} END {print sum}'`, { encoding: 'utf-8' }).trim();
+          const childrenCpu = parseFloat(childrenInfo) || 0;
+          const mainCpu = parseFloat(cpuInfo) || 0;
+          const totalCpu = mainCpu + childrenCpu;
+          
+          if (!isNaN(totalCpu)) {
+            cpuSamples.push(totalCpu);
+            return totalCpu;
+          }
+        } catch (childErr) {
+          // If measuring children fails, fall back to just the main process
+          const cpuValue = parseFloat(cpuInfo);
+          if (!isNaN(cpuValue)) {
+            cpuSamples.push(cpuValue);
+            return cpuValue;
+          }
+        }
+      } catch (e) {
+        // Process might have died or another error
+        console.log(`   CPU sampling error: ${e.message}`);
+        return null;
+      }
+      return null;
+    };
+    
+    // Take initial CPU sample before benchmark starts
+    console.log(`   Taking initial CPU sample...`);
+    sampleCpu();
+    
+    // Run the benchmark while sampling CPU periodically
     console.log(`   Running: oha -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} ${SERVER_URL}`);
+    
+    // Start a CPU sampling interval
+    const samplingInterval = setInterval(sampleCpu, 1000); // Sample every second
     
     const stdout = execSync(
       `${ohaEnvString} oha -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} --json ${SERVER_URL}`,
@@ -139,6 +185,32 @@ async function runBenchmark(config) {
         timeout: 120000 // 2 minutes timeout
       }
     );
+    
+    // Stop the CPU sampling
+    clearInterval(samplingInterval);
+    
+    // Take one final sample
+    sampleCpu();
+    
+    // Calculate average CPU usage, ignoring first and last samples which might be outliers
+    let measuredCpuPercent = null;
+    if (cpuSamples.length > 2) {
+      // Remove first and last samples and average the rest
+      const middleSamples = cpuSamples.slice(1, -1);
+      const sum = middleSamples.reduce((total, val) => total + val, 0);
+      measuredCpuPercent = sum / middleSamples.length;
+      
+      console.log(`   CPU samples: ${cpuSamples.map(s => s.toFixed(1)).join('%, ')}%`);
+      console.log(`   Average CPU usage: ${measuredCpuPercent.toFixed(1)}%`);
+    } else if (cpuSamples.length > 0) {
+      // If we don't have enough samples, use what we have
+      const sum = cpuSamples.reduce((total, val) => total + val, 0);
+      measuredCpuPercent = sum / cpuSamples.length;
+      console.log(`   Limited CPU samples: ${cpuSamples.map(s => s.toFixed(1)).join('%, ')}%`);
+      console.log(`   Average CPU usage: ${measuredCpuPercent.toFixed(1)}%`);
+    } else {
+      console.log(`   No valid CPU samples collected`);
+    }
     
     // Try to parse the JSON output
     try {
@@ -155,34 +227,41 @@ async function runBenchmark(config) {
       };
     }
     
-    // Add CPU usage data (this requires monitoring during the test)
-    // For now, we'll estimate based on README notes
+    // Use either measured or estimated CPU usage
     const cpuCores = os.cpus().length;
-    let estimatedCpuUsage;
+    let cpuUsage;
     
-    if (config.name === 'Base Case') {
-      estimatedCpuUsage = 650; // ~650% CPU
-    } else if (config.name === 'No Semaphore Spin') {
-      estimatedCpuUsage = 300; // ~300% CPU
-    } else if (config.name === 'Single Worker Thread') {
-      estimatedCpuUsage = 120; // ~120% CPU
-    } else if (config.name === 'No Spin + Tokio 2 Threads') {
-      estimatedCpuUsage = 330; // ~330% CPU
+    if (measuredCpuPercent !== null && !isNaN(measuredCpuPercent)) {
+      // Use real measured value from benchmark
+      cpuUsage = measuredCpuPercent;
+      console.log(`   Using measured CPU: ${cpuUsage.toFixed(1)}%`);
     } else {
-      // Default estimate for other configurations
-      estimatedCpuUsage = 300; 
+      // Fall back to estimates if measurement failed
+      console.log(`   Measurement failed, using estimates instead`);
+      if (config.name === 'Base Case') {
+        cpuUsage = 650; // ~650% CPU
+      } else if (config.name === 'No Semaphore Spin') {
+        cpuUsage = 300; // ~300% CPU
+      } else if (config.name === 'Single Worker Thread') {
+        cpuUsage = 120; // ~120% CPU
+      } else if (config.name === 'No Spin + Tokio 2 Threads') {
+        cpuUsage = 330; // ~330% CPU
+      } else {
+        // Default estimate for other configurations
+        cpuUsage = 300; 
+      }
     }
     
     // Calculate RPS per CPU core
-    const rpsPerCore = Math.round(results.summary.requestsPerSec / (estimatedCpuUsage / 100));
+    const rpsPerCore = Math.round(results.summary.requestsPerSec / (cpuUsage / 100));
     
     // Add the data to results
-    results.cpuUsage = estimatedCpuUsage;
+    results.cpuUsage = cpuUsage;
     results.rpsPerCore = rpsPerCore;
     results.config = config;
     
     console.log(`   Completed benchmark: ${results.summary.requestsPerSec.toFixed(2)} req/sec`);
-    console.log(`   Estimated CPU: ${estimatedCpuUsage}%, RPS/Core: ${rpsPerCore}`);
+    console.log(`   CPU usage: ${cpuUsage.toFixed(1)}%, RPS/Core: ${rpsPerCore.toLocaleString()}`);
     
   } catch (error) {
     console.error('   Benchmark failed:', error.message);
