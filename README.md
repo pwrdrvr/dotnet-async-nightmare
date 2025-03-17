@@ -2,13 +2,13 @@
 
 This demo shows the problem with async task completions moving between threads and how much CPU that is using.
 
-> 🔥 **Key Finding**: By limiting worker threads to 1 and disabling semaphore spinning, we achieved **4.8x more requests per CPU core** compared to the default .NET configuration.
+> 🔥 **Key Finding**: By limiting worker threads to 1 and disabling semaphore spinning, we achieved **7x more requests per CPU core** compared to the default .NET configuration.
 
 This problem exists in all async frameworks I tested, including those in the JVM, Go, Rust, and Dotnet.  Limiting each framework to 1 or 2 threads can significantly reduce CPU usage and increase RPS per CPU core.  For a simple way to test these other frameworks, just use the web server examples in [the-benchmarker/web-frameworks](https://github.com/the-benchmarker/web-frameworks) and experiment with the number of threads allowed for async tasks.
 
 Node.js does not suffer from this because it has a single worker thread in each Javascript runtime instance, so there is no context switching between threads and no task stealing.
 
-The question is: why are we using async task completions at all if it's causing 4.8x more CPU usage per RPS compared to a single thread?
+The question is: why are we using async task completions at all if it's causing `7x` more CPU usage per RPS compared to a single thread?
 
 ## Performance Visualization
 
@@ -45,7 +45,7 @@ After running the benchmarks:
 
 The charts clearly show:
 
-1. **CPU Efficiency**: Single worker thread configuration delivers 4.8x more requests per CPU core
+1. **CPU Efficiency**: Single worker thread configuration delivers 7x more requests per CPU core
 2. **Thread Overhead**: Default ThreadPool settings waste significant CPU on context switching
 3. **Semaphore Spinning**: Disabling ThreadPool semaphore spinning alone cuts CPU usage by 50%
 
@@ -63,18 +63,43 @@ Original source for thread pool control function: [Program.cs](https://github.co
 
 Details of 700% CPU usage for a dotnet reverse proxy to send 17k RPS to a Node.js express server using less than 100% CPU: https://github.com/pwrdrvr/lambda-dispatch/issues/109
 
-## Install DotNet 8.0 SDK
+## Running Locally
+
+### Install DotNet 8.0 SDK
 
 [.NET 8.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
-## Build
+### Build
 
 ```bash
 dotnet restore
 dotnet build -c Release
 ```
 
-## Run
+### Automated Test Script
+
+Note: `nvm` is a tool to get version 20 of Node.js - you can use any other method to get v20, or any other compatible version.
+
+#### Mac / Linux
+
+```bash
+nvm use
+
+./run.sh
+```
+
+#### Windows
+
+```bash
+nvm use
+
+node run-benchmarks.js
+node generate-charts.js
+```
+
+### Manually Testing
+
+#### Run
 
 ```bash
 # Base case - Uses 600-670% CPU to deliver 130k-140k RPS
@@ -114,7 +139,7 @@ DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release --project src
  # Limitng the IO completion port threads to 1 has no effect on CPU usage
 ```
 
-## Testing
+#### Testing
 
 ```bash
 # Smoke Test
