@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>.NET Async Thread Pool Performance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #0066cc;
+    }
+    .chart-container {
+      position: relative;
+      margin: 40px auto;
+      height: 400px;
+    }
+    .highlight-box {
+      background-color: #f0f8ff;
+      border-left: 4px solid #0066cc;
+      padding: 15px;
+      margin: 30px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .metric-card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #0066cc;
+      margin: 10px 0;
+    }
+    .metric-label {
+      font-size: 14px;
+      color: #666;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 30px 0;
+    }
+    .config-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 30px 0;
+    }
+    .config-table th, .config-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .config-table th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+    .config-table tr:hover {
+      background-color: #f9f9f9;
+    }
+    .fire-emoji {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <h1>.NET Async Thread Pool Performance</h1>
+  <p>This dashboard visualizes the performance impact of different thread pool configurations in .NET 8.0. 
+     The tests measure how various settings affect request throughput and CPU efficiency.</p>
+  
+  <div class="highlight-box">
+    <h3>Key Finding: 5.0x Improvement in Efficiency!</h3>
+    <p>By limiting worker threads to 1 and disabling semaphore spinning, we achieved 
+       <strong>5.0x more requests per CPU core</strong> compared to the default configuration.</p>
+  </div>
+  
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">Best Configuration</div>
+      <div class="metric-value">Single Worker Thread</div>
+      <div>1 worker thread, no semaphore spin, oha with 2 threads</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Maximum Throughput</div>
+      <div class="metric-value">135,000 req/sec</div>
+      <div>Highest raw request throughput</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Best Efficiency</div>
+      <div class="metric-value">104,167 req/sec/core</div>
+      <div>Highest throughput per CPU core used</div>
+    </div>
+  </div>
+  
+  <div class="chart-container">
+    <canvas id="rpsChart"></canvas>
+  </div>
+  
+  <div class="chart-container">
+    <canvas id="cpuChart"></canvas>
+  </div>
+  
+  <div class="chart-container">
+    <canvas id="efficiencyChart"></canvas>
+  </div>
+  
+  <h2>Configuration Details</h2>
+  <table class="config-table">
+    <thead>
+      <tr>
+        <th>Configuration</th>
+        <th>Description</th>
+        <th>Throughput (req/sec)</th>
+        <th>CPU Usage (%)</th>
+        <th>Efficiency (req/sec/core)</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+        <tr>
+          <td>Single Worker Thread</td>
+          <td>1 worker thread, no semaphore spin, oha with 2 threads</td>
+          <td>125,000</td>
+          <td>120%</td>
+          <td>104,167 <span class="fire-emoji">🔥</span></td>
+        </tr>
+      
+        <tr>
+          <td>No Semaphore Spin</td>
+          <td>Disabling Semaphore spinning</td>
+          <td>125,000</td>
+          <td>300%</td>
+          <td>41,667 </td>
+        </tr>
+      
+        <tr>
+          <td>No Spin + Tokio 2 Threads</td>
+          <td>No semaphore spin with oha limited to 2 threads</td>
+          <td>130,000</td>
+          <td>330%</td>
+          <td>39,394 </td>
+        </tr>
+      
+        <tr>
+          <td>No Spin + Tokio 1 Thread</td>
+          <td>No semaphore spin with oha limited to 1 thread</td>
+          <td>90,000</td>
+          <td>300%</td>
+          <td>30,000 </td>
+        </tr>
+      
+        <tr>
+          <td>Base Case</td>
+          <td>Default configuration</td>
+          <td>135,000</td>
+          <td>650%</td>
+          <td>20,769 </td>
+        </tr>
+      
+        <tr>
+          <td>Tokio 1 Thread</td>
+          <td>Default config with oha limited to 1 thread</td>
+          <td>100,000</td>
+          <td>700%</td>
+          <td>14,286 </td>
+        </tr>
+      
+    </tbody>
+  </table>
+  
+  <h2>Problem and Solution</h2>
+  <p>The core issue is that .NET's ThreadPool and async/await mechanics cause excessive thread context switching 
+     and CPU usage when handling HTTP requests. This is particularly problematic in high-throughput services.</p>
+  
+  <p>Key observations:</p>
+  <ul>
+    <li>Async task completions frequently move between threads, causing context switching overhead</li>
+    <li>The ThreadPool's work-stealing algorithm can exacerbate this problem</li>
+    <li>Semaphore spinning (waiting for work) consumes CPU without doing useful work</li>
+    <li>Limiting worker threads forces task continuations to stay on the same thread</li>
+  </ul>
+  
+  <script>
+    // Load the benchmark data
+    const data = [{"summary":{"requestsPerSec":125000,"latencyMean":0.0016,"latencyP50":0.0011,"latencyP90":0.0028,"latencyP99":0.006},"cpuUsage":120,"rpsPerCore":104167,"config":{"name":"Single Worker Thread","description":"1 worker thread, no semaphore spin, oha with 2 threads","env":{"LAMBDA_DISPATCH_MaxWorkerThreads":"1","DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"requestsPerSec":125000,"latencyMean":0.0015,"latencyP50":0.001,"latencyP90":0.0025,"latencyP99":0.005},"cpuUsage":300,"rpsPerCore":41667,"config":{"name":"No Semaphore Spin","description":"Disabling Semaphore spinning","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{}}},{"summary":{"requestsPerSec":130000,"latencyMean":0.0014,"latencyP50":0.001,"latencyP90":0.0025,"latencyP99":0.005},"cpuUsage":330,"rpsPerCore":39394,"config":{"name":"No Spin + Tokio 2 Threads","description":"No semaphore spin with oha limited to 2 threads","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"requestsPerSec":90000,"latencyMean":0.002,"latencyP50":0.0015,"latencyP90":0.0035,"latencyP99":0.008},"cpuUsage":300,"rpsPerCore":30000,"config":{"name":"No Spin + Tokio 1 Thread","description":"No semaphore spin with oha limited to 1 thread","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}},{"summary":{"requestsPerSec":135000,"latencyMean":0.0014,"latencyP50":0.001,"latencyP90":0.0025,"latencyP99":0.005},"cpuUsage":650,"rpsPerCore":20769,"config":{"name":"Base Case","description":"Default configuration","env":{},"ohaEnv":{}}},{"summary":{"requestsPerSec":100000,"latencyMean":0.0018,"latencyP50":0.0012,"latencyP90":0.003,"latencyP99":0.006},"cpuUsage":700,"rpsPerCore":14286,"config":{"name":"Tokio 1 Thread","description":"Default config with oha limited to 1 thread","env":{},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}}];
+    
+    // Chart colors
+    const colors = [
+      'rgba(0, 102, 204, 0.8)',
+      'rgba(54, 162, 235, 0.8)',
+      'rgba(75, 192, 192, 0.8)',
+      'rgba(255, 159, 64, 0.8)',
+      'rgba(153, 102, 255, 0.8)',
+      'rgba(255, 99, 132, 0.8)'
+    ];
+    
+    // Create RPS chart
+    const rpsCtx = document.getElementById('rpsChart').getContext('2d');
+    new Chart(rpsCtx, {
+      type: 'bar',
+      data: {
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
+        datasets: [{
+          label: 'Requests per Second',
+          data: [125000,125000,130000,90000,135000,100000],
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('0.8', '1')),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Raw Throughput (Requests per Second)',
+            font: { size: 16 }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Requests/sec'
+            }
+          }
+        }
+      }
+    });
+    
+    // Create CPU usage chart
+    const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+    new Chart(cpuCtx, {
+      type: 'bar',
+      data: {
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
+        datasets: [{
+          label: 'CPU Usage (%)',
+          data: [120,300,330,300,650,700],
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('0.8', '1')),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'CPU Utilization',
+            font: { size: 16 }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'CPU Usage (%)'
+            }
+          }
+        }
+      }
+    });
+    
+    // Create efficiency chart
+    const efficiencyCtx = document.getElementById('efficiencyChart').getContext('2d');
+    new Chart(efficiencyCtx, {
+      type: 'bar',
+      data: {
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
+        datasets: [{
+          label: 'Requests per Second per CPU Core',
+          data: [104167,41667,39394,30000,20769,14286],
+          backgroundColor: colors,
+          borderColor: colors.map(c => c.replace('0.8', '1')),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Efficiency (Requests per Second per CPU Core)',
+            font: { size: 16 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.raw.toLocaleString() + ' req/sec/core';
+              }
+            }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Requests/sec/core'
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+  

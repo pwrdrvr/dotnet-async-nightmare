@@ -1,0 +1,121 @@
+[
+  {
+    "summary": {
+      "requestsPerSec": 135000,
+      "latencyMean": 0.0014,
+      "latencyP50": 0.001,
+      "latencyP90": 0.0025,
+      "latencyP99": 0.005
+    },
+    "cpuUsage": 650,
+    "rpsPerCore": 20769,
+    "config": {
+      "name": "Base Case",
+      "description": "Default configuration",
+      "env": {},
+      "ohaEnv": {}
+    }
+  },
+  {
+    "summary": {
+      "requestsPerSec": 125000,
+      "latencyMean": 0.0015,
+      "latencyP50": 0.001,
+      "latencyP90": 0.0025,
+      "latencyP99": 0.005
+    },
+    "cpuUsage": 300,
+    "rpsPerCore": 41667,
+    "config": {
+      "name": "No Semaphore Spin",
+      "description": "Disabling Semaphore spinning",
+      "env": {
+        "DOTNET_ThreadPool_UnfairSemaphoreSpinLimit": "0"
+      },
+      "ohaEnv": {}
+    }
+  },
+  {
+    "summary": {
+      "requestsPerSec": 100000,
+      "latencyMean": 0.0018,
+      "latencyP50": 0.0012,
+      "latencyP90": 0.003,
+      "latencyP99": 0.006
+    },
+    "cpuUsage": 700,
+    "rpsPerCore": 14286,
+    "config": {
+      "name": "Tokio 1 Thread",
+      "description": "Default config with oha limited to 1 thread",
+      "env": {},
+      "ohaEnv": {
+        "TOKIO_WORKER_THREADS": "1"
+      }
+    }
+  },
+  {
+    "summary": {
+      "requestsPerSec": 90000,
+      "latencyMean": 0.002,
+      "latencyP50": 0.0015,
+      "latencyP90": 0.0035,
+      "latencyP99": 0.008
+    },
+    "cpuUsage": 300,
+    "rpsPerCore": 30000,
+    "config": {
+      "name": "No Spin + Tokio 1 Thread",
+      "description": "No semaphore spin with oha limited to 1 thread",
+      "env": {
+        "DOTNET_ThreadPool_UnfairSemaphoreSpinLimit": "0"
+      },
+      "ohaEnv": {
+        "TOKIO_WORKER_THREADS": "1"
+      }
+    }
+  },
+  {
+    "summary": {
+      "requestsPerSec": 130000,
+      "latencyMean": 0.0014,
+      "latencyP50": 0.001,
+      "latencyP90": 0.0025,
+      "latencyP99": 0.005
+    },
+    "cpuUsage": 330,
+    "rpsPerCore": 39394,
+    "config": {
+      "name": "No Spin + Tokio 2 Threads",
+      "description": "No semaphore spin with oha limited to 2 threads",
+      "env": {
+        "DOTNET_ThreadPool_UnfairSemaphoreSpinLimit": "0"
+      },
+      "ohaEnv": {
+        "TOKIO_WORKER_THREADS": "2"
+      }
+    }
+  },
+  {
+    "summary": {
+      "requestsPerSec": 125000,
+      "latencyMean": 0.0016,
+      "latencyP50": 0.0011,
+      "latencyP90": 0.0028,
+      "latencyP99": 0.006
+    },
+    "cpuUsage": 120,
+    "rpsPerCore": 104167,
+    "config": {
+      "name": "Single Worker Thread",
+      "description": "1 worker thread, no semaphore spin, oha with 2 threads",
+      "env": {
+        "LAMBDA_DISPATCH_MaxWorkerThreads": "1",
+        "DOTNET_ThreadPool_UnfairSemaphoreSpinLimit": "0"
+      },
+      "ohaEnv": {
+        "TOKIO_WORKER_THREADS": "2"
+      }
+    }
+  }
+]

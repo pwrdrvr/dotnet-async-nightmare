@@ -2,11 +2,35 @@
 
 This demo shows the problem with async task completions moving between threads and how much CPU that is using.
 
+> 🔥 **Key Finding**: By limiting worker threads to 1 and disabling semaphore spinning, we achieved **4.8x more requests per CPU core** compared to the default .NET configuration.
+
 This problem exists in all async frameworks I tested, including those in the JVM, Go, Rust, and Dotnet.  Limiting each framework to 1 or 2 threads can significantly reduce CPU usage and increase RPS per CPU core.  For a simple way to test these other frameworks, just use the web server examples in [the-benchmarker/web-frameworks](https://github.com/the-benchmarker/web-frameworks) and experiment with the number of threads allowed for async tasks.
 
 Node.js does not suffer from this because it has a single worker thread in each Javascript runtime instance, so there is no context switching between threads and no task stealing.
 
 The question is: why are we using async task completions at all if it's causing 4.8x more CPU usage per RPS compared to a single thread?
+
+## Performance Visualization
+
+![Efficiency Chart](visualize/screenshots/efficiency-chart.png)
+
+*The above chart shows requests/second/CPU core for different thread pool configurations. Higher is better.*
+
+You can generate these charts with real benchmarks on your system by running:
+
+```bash
+# Install prerequisites (if needed)
+# npm install -g node@20
+# cargo install oha
+
+# Run benchmarks and generate visualizations
+cd visualize && ./run.sh
+
+# Or test with sample data without running benchmarks
+cd visualize && ./run.sh --test
+```
+
+See [visualize/charts.html](visualize/charts.html) for detailed results after running benchmarks.
 
 ## Links
 

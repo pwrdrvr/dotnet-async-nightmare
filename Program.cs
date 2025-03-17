@@ -1,7 +1,7 @@
 ﻿AdjustThreadPool();
 
 var builder = WebApplication.CreateBuilder();
-builder.WebHost.ConfigureKestrel(o => { o.AddServerHeader = false; o.ListenAnyIP(5000); });
+builder.WebHost.ConfigureKestrel(o => { o.AddServerHeader = false; o.ListenAnyIP(5001); });
 builder.Logging.ClearProviders();
 
 var app = builder.Build();
