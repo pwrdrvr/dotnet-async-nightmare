@@ -14,15 +14,15 @@ Initial report of high CPU usage in a reverse proxy: https://github.com/pwrdrvr/
 
 Open issue in DotNet since 2022, with partial work-around: https://github.com/dotnet/runtime/issues/72153#issuecomment-1216363757
 
-Original source for aspnet-minimal-api: https://github.com/the-benchmarker/web-frameworks/tree/master/csharp/aspnet-minimal-api
+Original source for aspnet-minimal-api: [aspnet-minimal-api](https://github.com/the-benchmarker/web-frameworks/tree/master/csharp/aspnet-minimal-api)
 
-Original source for thread pool control function: https://github.com/pwrdrvr/lambda-dispatch/blob/e5e32a0d5bdbbfb6e89acaedaf4bf2ec7d0de177/src/PwrDrvr.LambdaDispatch.Router/Program.cs#L8-L74s
+Original source for thread pool control function: [Program.cs](https://github.com/pwrdrvr/lambda-dispatch/blob/e5e32a0d5bdbbfb6e89acaedaf4bf2ec7d0de177/src/PwrDrvr.LambdaDispatch.Router/Program.cs#L8-L74s)
 
 Details of 700% CPU usage for a dotnet reverse proxy to send 17k RPS to a Node.js express server using less than 100% CPU: https://github.com/pwrdrvr/lambda-dispatch/issues/109
 
 ## Install DotNet 8.0 SDK
 
-https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+[.NET 8.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ## Build
 
