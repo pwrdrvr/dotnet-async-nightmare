@@ -12,7 +12,7 @@ The question is: why are we using async task completions at all if it's causing 
 
 ## Performance Visualization
 
-![Efficiency Chart](visualize/screenshots/efficiency-chart.png)
+![Efficiency Chart](screenshots/efficiency-chart.png)
 
 *The above chart shows requests/second/CPU core for different thread pool configurations. Higher is better.*
 
@@ -24,13 +24,29 @@ You can generate these charts with real benchmarks on your system by running:
 # cargo install oha
 
 # Run benchmarks and generate visualizations
-cd visualize && ./run.sh
+./run.sh
 
 # Or test with sample data without running benchmarks
-cd visualize && ./run.sh --test
+./run.sh --test
+
+# Clean up any lingering processes if needed
+./run.sh --clean
 ```
 
-See [visualize/charts.html](visualize/charts.html) for detailed results after running benchmarks.
+After running the benchmarks:
+1. View the interactive charts in your browser
+2. Take screenshots of the charts and save them to the `screenshots` directory
+3. The full results are available in `charts.html` and `benchmark-data.json`
+
+### Key Findings Visualized
+
+The charts clearly show:
+
+1. **CPU Efficiency**: Single worker thread configuration delivers 4.8x more requests per CPU core
+2. **Thread Overhead**: Default ThreadPool settings waste significant CPU on context switching
+3. **Semaphore Spinning**: Disabling ThreadPool semaphore spinning alone cuts CPU usage by 50%
+
+See [charts.html](charts.html) for detailed interactive results after running benchmarks.
 
 ## Links
 
@@ -100,16 +116,16 @@ DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0 dotnet run -c Release
 
 ```bash
 # Smoke Test
-curl http://localhost:5000/user/1234
+curl http://localhost:5001/user/1234
 
 # Load Test
 # In this case oha will use too many threads and will be slower with 2x to 3x more CPU usage than necessary
 # Incidentally, this is the same problem that dotnet is having with async task completions / spin waits / work stealing
-oha -c 20 -z 60s http://localhost:5000/user/1234
+oha -c 20 -z 60s http://localhost:5001/user/1234
 
 # Load test with 1 Tokio runtime thread - 20 concurrent sockets
-TOKIO_WORKER_THREADS=1 oha -c 20 -z 60s http://localhost:5000/user/1234
+TOKIO_WORKER_THREADS=1 oha -c 20 -z 60s http://localhost:5001/user/1234
 
 # Load test with 1 Tokio runtime thread - 100 concurrent sockets
-TOKIO_WORKER_THREADS=1 oha -c 100 -z 60s http://localhost:5000/user/1234
+TOKIO_WORKER_THREADS=1 oha -c 100 -z 60s http://localhost:5001/user/1234
 ```

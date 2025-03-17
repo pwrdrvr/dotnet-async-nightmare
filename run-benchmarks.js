@@ -71,15 +71,24 @@ async function runBenchmark(config) {
   
   // Start the application
   console.log('   Starting application...');
-  const dotnetProcess = require('child_process').spawn(
-    'bash',
-    ['-c', `${dotnetEnvString} ./bin/Release/net8.0/web`],
-    { 
-      stdio: 'ignore',
-      detached: true,
-      shell: true
-    }
-  );
+  let dotnetProcess;
+  try {
+    dotnetProcess = require('child_process').spawn(
+      'bash',
+      ['-c', `${dotnetEnvString} ./bin/Release/net8.0/web`],
+      { 
+        stdio: 'ignore',
+        detached: true,
+        shell: true
+      }
+    );
+    // Store the process ID for later termination
+    const pid = dotnetProcess.pid;
+    console.log(`   Server started with PID: ${pid}`);
+  } catch (error) {
+    console.error('   Failed to start server:', error);
+    return null;
+  }
   
   // Give the server time to start
   await new Promise(resolve => setTimeout(resolve, 3000));
@@ -100,13 +109,30 @@ async function runBenchmark(config) {
   let results;
   try {
     // Run the benchmark and capture output
+    console.log(`   Running: oha -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} ${SERVER_URL}`);
+    
     const stdout = execSync(
       `${ohaEnvString} oha -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} --json ${SERVER_URL}`,
-      { encoding: 'utf-8' }
+      { 
+        encoding: 'utf-8',
+        timeout: 120000 // 2 minutes timeout
+      }
     );
     
-    // Parse the JSON output
-    results = JSON.parse(stdout);
+    // Try to parse the JSON output
+    try {
+      results = JSON.parse(stdout);
+    } catch (parseError) {
+      console.error('   Error parsing benchmark results:', parseError.message);
+      console.log('   Raw output:', stdout.substring(0, 200) + '...');
+      
+      // Create fallback results with estimated values
+      results = {
+        summary: {
+          requestsPerSec: 0
+        }
+      };
+    }
     
     // Add CPU usage data (this requires monitoring during the test)
     // For now, we'll estimate based on README notes
@@ -142,9 +168,30 @@ async function runBenchmark(config) {
     results = null;
   } finally {
     // Terminate the server
-    if (dotnetProcess && !dotnetProcess.killed) {
-      console.log('   Terminating server...');
-      process.kill(-dotnetProcess.pid);
+    try {
+      if (dotnetProcess && dotnetProcess.pid) {
+        console.log('   Terminating server...');
+        // Try different approaches to terminate the server
+        try {
+          // First try to kill the process group
+          process.kill(-dotnetProcess.pid, 'SIGTERM');
+        } catch (e) {
+          try {
+            // Then try to kill just the process
+            process.kill(dotnetProcess.pid, 'SIGTERM');
+          } catch (e2) {
+            // As a last resort, use execSync to kill the process
+            try {
+              // Use a very specific pattern to avoid killing unrelated processes
+              execSync(`pkill -f "bin/Release/net8\\.0/web$"`);
+            } catch (e3) {
+              console.log('   Could not terminate server, it may have already exited.');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log('   Server may have already terminated.');
     }
   }
   
