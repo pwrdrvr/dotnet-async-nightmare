@@ -1,0 +1,43 @@
+{
+  "systemInfo": {
+    "timestamp": "2025-03-17T17:06:15.817Z",
+    "date": "3/17/2025",
+    "time": "1:06:15 PM",
+    "os": "Darwin 24.3.0",
+    "hostname": "MacBook-Pro-2.local",
+    "platform": "darwin",
+    "cpuModel": "Apple M2 Max",
+    "cpuCores": 12,
+    "totalMemoryGB": "32.00",
+    "freeMemoryGB": "0.55",
+    "nodeVersion": "v18.16.1",
+    "dotnetRuntimeVersion": "8.0.1",
+    "dotnetVersion": ".NET 8.0.1",
+    "dotnetOS": "Darwin 24.3.0 Darwin Kernel Version 24.3.0: Thu Jan  2 20:24:23 PST 2025; root:xnu-11215.81.4~3/RELEASE_ARM64_T6020",
+    "dotnetArchitecture": "Arm64"
+  },
+  "benchmarks": [
+    {
+      "summary": {
+        "requestsPerSec": 1000
+      },
+      "cpuUsage": 50,
+      "rpsPerCore": 2000,
+      "config": {
+        "name": "Test Configuration",
+        "description": "Default .NET worker threads for testing",
+        "env": {},
+        "ohaEnv": {
+          "TOKIO_WORKER_THREADS": "1"
+        }
+      },
+      "cpuMeasurement": {
+        "samples": 5,
+        "min": 40,
+        "max": 60,
+        "average": 50,
+        "measured": true
+      }
+    }
+  ]
+}

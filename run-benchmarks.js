@@ -15,25 +15,25 @@ const DATA_FILE = path.join(__dirname, 'benchmark-data.json');
 const configurations = [
   {
     name: 'Base Case',
-    description: 'Default .NET worker threads, default semaphore spin, oha with 1 thread',
+    description: 'Default .NET worker threads, default semaphore spin, oha 1 thread',
     env: {},
     ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
   },
   {
     name: 'No Spin',
-    description: 'Default .NET worker threads, no semaphore spin, oha with 1 thread',
+    description: 'Default .NET worker threads, no semaphore spin, oha 1 thread',
     env: { 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0' },
     ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
   },
   {
     name: 'Spin 10',
-    description: 'Default .NET worker threads, semaphore spin 10, oha with 1 thread',
+    description: 'Default .NET worker threads, semaphore spin 10, oha 1 thread',
     env: { 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '10' },
     ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
   },
   {
-    name: '1 .NET Thread, oha 1',
-    description: '1 .NET worker threads, no semaphore spin, oha with 1 thread',
+    name: '1 .NET Thread - oha 1',
+    description: '1 .NET worker threads, no semaphore spin, oha 1 thread',
     env: { 
       'LAMBDA_DISPATCH_MaxWorkerThreads': '1',
       'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0'
@@ -41,8 +41,8 @@ const configurations = [
     ohaEnv: { 'TOKIO_WORKER_THREADS': '1' }
   },
   {
-    name: '1 .NET Threads, oha 2',
-    description: '1 .NET worker threads, no semaphore spin, oha with 2 threads',
+    name: '1 .NET Threads - oha 2',
+    description: '1 .NET worker threads, no semaphore spin, oha 2 threads',
     env: { 
       'LAMBDA_DISPATCH_MaxWorkerThreads': '1',
       'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0'
@@ -51,7 +51,7 @@ const configurations = [
   },
   {
     name: '2 .NET Threads - oha 2',
-    description: '2 .NET worker threads, no semaphore spin, oha with 2 threads',
+    description: '2 .NET worker threads, no semaphore spin, oha 2 threads',
     env: { 
       'LAMBDA_DISPATCH_MaxWorkerThreads': '2',
       'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit': '0'
@@ -465,23 +465,56 @@ async function collectSystemInfo() {
     // Fallback to basic OS info if any command fails
   }
   
-  // Try to get .NET version
+  // Get .NET version information from the application itself
   try {
-    const dotnetVersionOutput = execSync('dotnet --version', { encoding: 'utf8' }).trim();
-    systemInfo.dotnetVersion = dotnetVersionOutput;
+    // Run the application with --version flag to get detailed version information
+    console.log('Getting .NET version information from application...');
+    const dotnetVersionOutput = execSync('./src/web/bin/Release/net8.0/web --version', { encoding: 'utf8' }).trim();
     
-    // Try to get .NET runtime version for more details
-    try {
-      const dotnetInfo = execSync('dotnet --info', { encoding: 'utf8' });
-      const runtimeMatch = dotnetInfo.match(/Runtime Environment:[^\n]*\n\s*(.+)/);
-      if (runtimeMatch && runtimeMatch[1]) {
-        systemInfo.dotnetRuntimeVersion = runtimeMatch[1].trim();
+    // Parse the output to extract relevant version information
+    const runtimeVersionMatch = dotnetVersionOutput.match(/Runtime Version: (.+)/);
+    const frameworkMatch = dotnetVersionOutput.match(/Framework: (.+)/);
+    
+    if (runtimeVersionMatch && runtimeVersionMatch[1]) {
+      systemInfo.dotnetRuntimeVersion = runtimeVersionMatch[1].trim();
+    }
+    
+    if (frameworkMatch && frameworkMatch[1]) {
+      systemInfo.dotnetVersion = frameworkMatch[1].trim();
+    } else {
+      // Fallback to using dotnet --version if we can't get it from the app
+      try {
+        const fallbackVersion = execSync('dotnet --version', { encoding: 'utf8' }).trim();
+        systemInfo.dotnetVersion = fallbackVersion;
+      } catch (e) {
+        systemInfo.dotnetVersion = 'Unknown';
       }
-    } catch (e) {
-      // Use basic version if --info fails
+    }
+    
+    // Extract additional information if available
+    const osMatch = dotnetVersionOutput.match(/OS: (.+)/);
+    const archMatch = dotnetVersionOutput.match(/Architecture: (.+)/);
+    
+    if (osMatch && osMatch[1]) {
+      systemInfo.dotnetOS = osMatch[1].trim();
+    }
+    
+    if (archMatch && archMatch[1]) {
+      systemInfo.dotnetArchitecture = archMatch[1].trim();
     }
   } catch (e) {
-    systemInfo.dotnetVersion = 'Unknown';
+    console.log('Failed to get .NET version from application --version flag, will try API endpoint during first benchmark');
+    
+    // Flag to try the API version endpoint during the first benchmark
+    systemInfo.shouldTryApiVersionEndpoint = true;
+    
+    // Fallback to basic dotnet --version
+    try {
+      const fallbackVersion = execSync('dotnet --version', { encoding: 'utf8' }).trim();
+      systemInfo.dotnetVersion = fallbackVersion;
+    } catch (e) {
+      systemInfo.dotnetVersion = 'Unknown';
+    }
   }
   
   // Try to get oha version

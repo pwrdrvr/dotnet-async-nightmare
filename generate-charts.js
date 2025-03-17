@@ -166,6 +166,8 @@ function generateChartsHtml(data) {
       <div><strong>Free Memory:</strong> ${systemInfo.freeMemoryGB || 'Unknown'} GB</div>
       <div><strong>.NET Version:</strong> ${systemInfo.dotnetVersion || 'Unknown'}</div>
       <div><strong>.NET Runtime:</strong> ${systemInfo.dotnetRuntimeVersion || 'Unknown'}</div>
+      <div><strong>.NET Architecture:</strong> ${systemInfo.dotnetArchitecture || 'Unknown'}</div>
+      <div><strong>.NET OS:</strong> ${systemInfo.dotnetOS || systemInfo.os || 'Unknown'}</div>
       <div><strong>Node.js:</strong> ${systemInfo.nodeVersion || 'Unknown'}</div>
       <div><strong>Load Tester:</strong> ${systemInfo.ohaVersion || 'oha'}</div>
     </div>

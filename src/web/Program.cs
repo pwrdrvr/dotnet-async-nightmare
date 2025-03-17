@@ -1,4 +1,13 @@
-﻿AdjustThreadPool();
+﻿var cmdArgs = Environment.GetCommandLineArgs();
+bool showVersionInfo = cmdArgs.Contains("--version");
+
+if (showVersionInfo)
+{
+    PrintVersionInfo();
+    return;
+}
+
+AdjustThreadPool();
 
 var builder = WebApplication.CreateBuilder();
 builder.WebHost.ConfigureKestrel(o => { o.AddServerHeader = false; o.ListenAnyIP(5001); });
@@ -11,6 +20,15 @@ app.MapGet("/", () => { });
 app.MapGet("user/{id}", (string id) => id);
 
 app.MapPost("user", () => { });
+
+app.MapGet("version", () => {
+    return new {
+        RuntimeVersion = Environment.Version.ToString(),
+        FrameworkDescription = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+        OSDescription = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+        ProcessArchitecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString()
+    };
+});
 
 app.Run();
 
@@ -81,4 +99,33 @@ static void AdjustThreadPool()
   Console.WriteLine($"Final min threads: {minWorkerThreads} worker threads, {minCompletionPortThreads} completion port threads");
   Console.WriteLine($"Final max threads: {maxWorkerThreads} worker threads, {maxCompletionPortThreads} completion port threads");
   Console.WriteLine("");
+}
+
+/// <summary>
+/// Prints .NET runtime and framework version information to the console
+/// </summary>
+static void PrintVersionInfo()
+{
+  Console.WriteLine("=== .NET Version Information ===");
+  
+  // Get runtime version
+  string runtimeVersion = Environment.Version.ToString();
+  Console.WriteLine($"Runtime Version: {runtimeVersion}");
+  
+  // Get framework version
+  string frameworkDescription = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+  Console.WriteLine($"Framework: {frameworkDescription}");
+  
+  // Get OS information
+  string osDescription = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+  Console.WriteLine($"OS: {osDescription}");
+  
+  // Get architecture information
+  var processArchitecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
+  Console.WriteLine($"Architecture: {processArchitecture}");
+  
+  // Current directory
+  Console.WriteLine($"Current Directory: {Environment.CurrentDirectory}");
+  
+  Console.WriteLine("===============================");
 }
