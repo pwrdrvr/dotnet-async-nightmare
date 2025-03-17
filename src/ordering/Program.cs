@@ -27,9 +27,20 @@ namespace ThreadPoolOrdering
             PrintSystemInfo();
             
             // Determine which test to run
-            if (args.Length > 0 && args[0] == "--histogram")
+            if (args.Length > 0)
             {
-                await RunThreadHistogramTest();
+                switch (args[0])
+                {
+                    case "--histogram":
+                        await RunThreadHistogramTest();
+                        break;
+                    case "--histogram-serial":
+                        await RunSerialHistogramTest();
+                        break;
+                    default:
+                        await RunBasicLifoTest();
+                        break;
+                }
             }
             else
             {
@@ -215,10 +226,10 @@ namespace ThreadPoolOrdering
             Console.WriteLine($"Tasks completed on same thread they started on: {sameThreadCount} ({sameThreadPercentage:F2}%)");
             
             // Generate a histogram of completion thread IDs
-            Console.WriteLine("\nCompletion Thread ID Histogram (Top 10):");
+            Console.WriteLine("\nCompletion Thread ID Histogram (Top 20):");
             var sortedThreads = _threadIdCompletionCount
                 .OrderByDescending(pair => pair.Value)
-                .Take(10)
+                .Take(20)
                 .ToList();
             
             foreach (var pair in sortedThreads)
@@ -244,6 +255,123 @@ namespace ThreadPoolOrdering
                 "Even distribution suggests round-robin or random assignment";
             
             Console.WriteLine($"Interpretation: {interpretation}");
+            
+            Console.WriteLine("\nTest complete.");
+        }
+        
+        /// <summary>
+        /// Serial histogram test that runs requests one after another and tracks thread behavior
+        /// This helps observe LIFO behavior more clearly in a controlled sequential environment
+        /// </summary>
+        static async Task RunSerialHistogramTest()
+        {
+            int requestCount = 1000; // Fewer requests since we're running them serially
+            Console.WriteLine($"Running Serial Histogram Test with {requestCount} Sequential Requests...\n");
+            
+            int mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            Console.WriteLine($"Main thread: {mainThreadId}");
+            
+            // Clear the dictionary for thread counts
+            _threadIdCompletionCount.Clear();
+            
+            // Create arrays to track thread IDs across requests
+            var initialThreadIds = new int[requestCount];
+            var completionThreadIds = new int[requestCount];
+            
+            // Create a Stopwatch to measure overall execution time
+            var stopwatch = Stopwatch.StartNew();
+            
+            // Run requests serially one after another
+            for (int i = 0; i < requestCount; i++)
+            {
+                // Record the initial thread ID (should always be main thread)
+                initialThreadIds[i] = Thread.CurrentThread.ManagedThreadId;
+                
+                // Make the HTTP request
+                var response = await _httpClient.GetAsync(_testUrl);
+                
+                // Record the completion thread ID
+                completionThreadIds[i] = Thread.CurrentThread.ManagedThreadId;
+                
+                // Increment the count for this thread ID in our dictionary
+                _threadIdCompletionCount.AddOrUpdate(
+                    completionThreadIds[i],
+                    1,  // If the key doesn't exist, add it with count 1
+                    (key, oldValue) => oldValue + 1  // If the key exists, increment its count
+                );
+                
+                // Print progress every 100 requests
+                if (i % 100 == 0 && i > 0)
+                {
+                    Console.WriteLine($"Completed {i} requests...");
+                }
+            }
+            
+            // Stop the timer
+            stopwatch.Stop();
+            
+            Console.WriteLine($"All {requestCount} serial requests completed in {stopwatch.ElapsedMilliseconds} ms");
+            
+            // Count how many completions ran on the main thread
+            int mainThreadCompletions = completionThreadIds.Count(id => id == mainThreadId);
+            double mainThreadPercentage = (double)mainThreadCompletions / requestCount * 100;
+            
+            Console.WriteLine($"Completions on main thread: {mainThreadCompletions} ({mainThreadPercentage:F2}%)");
+            
+            // Find the most frequently used completion thread
+            var mostUsedThread = _threadIdCompletionCount.OrderByDescending(pair => pair.Value).First();
+            double mostUsedPercentage = (double)mostUsedThread.Value / requestCount * 100;
+            
+            Console.WriteLine($"Most used thread: ID {mostUsedThread.Key} with {mostUsedThread.Value} completions ({mostUsedPercentage:F2}%)");
+            
+            // Generate a histogram of completion thread IDs
+            Console.WriteLine("\nCompletion Thread ID Histogram:");
+            var sortedThreads = _threadIdCompletionCount
+                .OrderByDescending(pair => pair.Value)
+                .ToList();
+            
+            foreach (var pair in sortedThreads)
+            {
+                double percentage = (double)pair.Value / requestCount * 100;
+                Console.WriteLine($"Thread ID {pair.Key}: {pair.Value} completions ({percentage:F2}%)");
+            }
+            
+            // Analyze thread switching patterns
+            int consecutiveSameThread = 0;
+            
+            for (int i = 1; i < requestCount; i++)
+            {
+                if (completionThreadIds[i] == completionThreadIds[i - 1])
+                {
+                    consecutiveSameThread++;
+                }
+            }
+            
+            double consecutivePercentage = (double)consecutiveSameThread / (requestCount - 1) * 100;
+            Console.WriteLine($"\nConsecutive completions on same thread: {consecutiveSameThread} ({consecutivePercentage:F2}%)");
+            
+            // Analyze LIFO vs FIFO behavior
+            Console.WriteLine("\nLIFO vs FIFO Analysis:");
+            
+            // In a true LIFO (Last In, First Out) system, most completions should run on the same thread
+            // In a FIFO (First In, First Out) or round-robin system, completions should be distributed more evenly
+            
+            // Calculate thread concentration ratio (higher = more LIFO-like)
+            double concentration = (double)mostUsedThread.Value / requestCount;
+            string behaviorType = concentration > 0.7 ? "Strong LIFO behavior" :
+                                concentration > 0.4 ? "Moderate LIFO behavior" :
+                                concentration > 0.2 ? "Weak LIFO behavior" :
+                                "FIFO or round-robin behavior";
+            
+            Console.WriteLine($"Thread concentration ratio: {concentration:F2}");
+            Console.WriteLine($"Interpretation: {behaviorType}");
+            
+            // Check for patterns in the first 20 completions
+            Console.WriteLine("\nFirst 20 completions thread IDs:");
+            for (int i = 0; i < Math.Min(20, requestCount); i++)
+            {
+                Console.WriteLine($"Request {i+1}: Thread {completionThreadIds[i]}");
+            }
             
             Console.WriteLine("\nTest complete.");
         }

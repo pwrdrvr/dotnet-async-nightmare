@@ -16,8 +16,14 @@ curl http://localhost:5001/user/1234
 oha -c 20 -z 60s http://localhost:5001/user/1234
 
 # Thread Pool Ordering Tests
+# Basic test (default configuration)
 dotnet run -c Release --project src/ordering/ordering.csproj
+
+# Concurrent histogram test
 dotnet run -c Release --project src/ordering/ordering.csproj --histogram
+
+# Serial histogram test (shows LIFO vs FIFO behavior more clearly)
+dotnet run -c Release --project src/ordering/ordering.csproj --histogram-serial
 ```
 
 ## Code Style Guidelines
