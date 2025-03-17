@@ -8,7 +8,7 @@ const os = require('os');
 // Configuration for benchmarks
 const BENCHMARK_DURATION = '30s'; // Duration for each benchmark
 const CONCURRENCY = 20; // Number of concurrent connections
-const SERVER_URL = 'http://localhost:5000/user/1234';
+const SERVER_URL = 'http://localhost:5001/user/1234';
 const DATA_FILE = path.join(__dirname, 'benchmark-data.json');
 
 // Define the different configurations to test
