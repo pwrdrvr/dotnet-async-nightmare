@@ -172,21 +172,71 @@ async function runBenchmark(config) {
     console.log(`   Taking initial CPU sample...`);
     sampleCpu();
     
-    // Run the benchmark while sampling CPU periodically
-    console.log(`   Running: oha -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} ${SERVER_URL}`);
+    // Run the benchmark using spawn while sampling CPU periodically
+    console.log(`   Running: oha --no-tui -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} --json ${SERVER_URL}`);
     
     // Start a CPU sampling interval
     const samplingInterval = setInterval(sampleCpu, 1000); // Sample every second
     
-    const stdout = execSync(
-      `${ohaEnvString} oha -c ${CONCURRENCY} -z ${BENCHMARK_DURATION} --json ${SERVER_URL}`,
-      { 
-        encoding: 'utf-8',
-        timeout: 120000 // 2 minutes timeout
-      }
-    );
+    // Prepare oha environment variables as an object
+    const ohaEnv = {};
+    Object.entries(config.ohaEnv).forEach(([key, value]) => {
+      ohaEnv[key] = value;
+    });
     
-    // Stop the CPU sampling
+    // Use spawn instead of execSync to allow sampling to continue during benchmark
+    const stdout = await new Promise((resolve, reject) => {
+      try {
+        // Prepare oha command and arguments
+        const ohaArgs = [
+          '--no-tui',
+          '-c', CONCURRENCY.toString(),
+          '-z', BENCHMARK_DURATION,
+          '--json', 
+          SERVER_URL
+        ];
+        
+        let outputData = '';
+        
+        // Spawn oha process
+        const proc = require('child_process').spawn(
+          'oha', 
+          ohaArgs,
+          {
+            env: { ...process.env, ...ohaEnv },
+            stdio: ['ignore', 'pipe', 'pipe']
+          }
+        );
+        
+        // Collect stdout
+        proc.stdout.on('data', (data) => {
+          outputData += data.toString();
+        });
+        
+        // Collect stderr for debugging
+        proc.stderr.on('data', (data) => {
+          console.log(`   oha stderr: ${data.toString().trim()}`);
+        });
+        
+        // Resolve promise when oha completes
+        proc.on('close', (code) => {
+          if (code === 0) {
+            resolve(outputData);
+          } else {
+            reject(new Error(`oha exited with code ${code}`));
+          }
+        });
+        
+        // Handle errors
+        proc.on('error', (err) => {
+          reject(err);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+    
+    // Stop the CPU sampling after oha completes
     clearInterval(samplingInterval);
     
     // Take one final sample
@@ -194,22 +244,43 @@ async function runBenchmark(config) {
     
     // Calculate average CPU usage, ignoring first and last samples which might be outliers
     let measuredCpuPercent = null;
+    let minCpu = Infinity;
+    let maxCpu = -Infinity;
+    
     if (cpuSamples.length > 2) {
-      // Remove first and last samples and average the rest
+      // Calculate statistics
+      const allCpuValues = [...cpuSamples]; // Copy all samples
+      allCpuValues.forEach(sample => {
+        minCpu = Math.min(minCpu, sample);
+        maxCpu = Math.max(maxCpu, sample);
+      });
+      
+      // Remove first and last samples for the average (they're outliers)
       const middleSamples = cpuSamples.slice(1, -1);
       const sum = middleSamples.reduce((total, val) => total + val, 0);
       measuredCpuPercent = sum / middleSamples.length;
       
-      console.log(`   CPU samples: ${cpuSamples.map(s => s.toFixed(1)).join('%, ')}%`);
-      console.log(`   Average CPU usage: ${measuredCpuPercent.toFixed(1)}%`);
+      console.log(`   CPU sampling statistics:`);
+      console.log(`   - Samples taken: ${cpuSamples.length}`);
+      console.log(`   - Sample values: ${cpuSamples.map(s => s.toFixed(1)).join('%, ')}%`);
+      console.log(`   - Min CPU: ${minCpu.toFixed(1)}%, Max CPU: ${maxCpu.toFixed(1)}%`);
+      console.log(`   - Average CPU: ${measuredCpuPercent.toFixed(1)}% (excluding first/last samples)`);
     } else if (cpuSamples.length > 0) {
       // If we don't have enough samples, use what we have
+      cpuSamples.forEach(sample => {
+        minCpu = Math.min(minCpu, sample);
+        maxCpu = Math.max(maxCpu, sample);
+      });
+      
       const sum = cpuSamples.reduce((total, val) => total + val, 0);
       measuredCpuPercent = sum / cpuSamples.length;
-      console.log(`   Limited CPU samples: ${cpuSamples.map(s => s.toFixed(1)).join('%, ')}%`);
-      console.log(`   Average CPU usage: ${measuredCpuPercent.toFixed(1)}%`);
+      
+      console.log(`   Limited CPU samples collected: ${cpuSamples.length}`);
+      console.log(`   - Sample values: ${cpuSamples.map(s => s.toFixed(1)).join('%, ')}%`);
+      console.log(`   - Min CPU: ${minCpu.toFixed(1)}%, Max CPU: ${maxCpu.toFixed(1)}%`);
+      console.log(`   - Average CPU: ${measuredCpuPercent.toFixed(1)}%`);
     } else {
-      console.log(`   No valid CPU samples collected`);
+      console.log(`   No valid CPU samples collected - falling back to estimates`);
     }
     
     // Try to parse the JSON output
@@ -259,6 +330,21 @@ async function runBenchmark(config) {
     results.cpuUsage = cpuUsage;
     results.rpsPerCore = rpsPerCore;
     results.config = config;
+    
+    // Add CPU measurement metadata if available
+    if (cpuSamples.length > 0) {
+      results.cpuMeasurement = {
+        samples: cpuSamples.length,
+        min: minCpu,
+        max: maxCpu,
+        average: measuredCpuPercent,
+        measured: true
+      };
+    } else {
+      results.cpuMeasurement = {
+        measured: false
+      };
+    }
     
     console.log(`   Completed benchmark: ${results.summary.requestsPerSec.toFixed(2)} req/sec`);
     console.log(`   CPU usage: ${cpuUsage.toFixed(1)}%, RPS/Core: ${rpsPerCore.toLocaleString()}`);

@@ -82,9 +82,9 @@
      The tests measure how various settings affect request throughput and CPU efficiency.</p>
   
   <div class="highlight-box">
-    <h3>Key Finding: 4.4x Improvement in Efficiency!</h3>
+    <h3>Key Finding: 3.7x Improvement in Efficiency!</h3>
     <p>By limiting worker threads to 1 and disabling semaphore spinning, we achieved 
-       <strong>4.4x more requests per CPU core</strong> compared to the default configuration.</p>
+       <strong>3.7x more requests per CPU core</strong> compared to the default configuration.</p>
   </div>
   
   <div class="metric-grid">
@@ -95,12 +95,12 @@
     </div>
     <div class="metric-card">
       <div class="metric-label">Maximum Throughput</div>
-      <div class="metric-value">129,472.095 req/sec</div>
+      <div class="metric-value">135,878.063 req/sec</div>
       <div>Highest raw request throughput</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Best Efficiency</div>
-      <div class="metric-value">345,611 req/sec/core</div>
+      <div class="metric-value">81,901 req/sec/core</div>
       <div>Highest throughput per CPU core used</div>
     </div>
   </div>
@@ -124,7 +124,8 @@
         <th>Configuration</th>
         <th>Description</th>
         <th>Throughput (req/sec)</th>
-        <th>CPU Usage (%)</th>
+        <th>CPU Usage (%) <sup>*</sup></th>
+        <th>Min-Max CPU (%)</th>
         <th>Efficiency (req/sec/core)</th>
       </tr>
     </thead>
@@ -133,51 +134,63 @@
         <tr>
           <td>Single Worker Thread</td>
           <td>1 worker thread, no semaphore spin, oha with 2 threads</td>
-          <td>104,893</td>
-          <td>30.35%</td>
-          <td>345,611 <span class="fire-emoji">🔥</span></td>
+          <td>109,670</td>
+          <td>133.9% </td>
+          <td>0.0-142.0</td>
+          <td>81,901 <span class="fire-emoji">🔥</span></td>
         </tr>
       
         <tr>
           <td>No Semaphore Spin</td>
           <td>Disabling Semaphore spinning</td>
-          <td>118,279</td>
-          <td>105%</td>
-          <td>112,646 </td>
-        </tr>
-      
-        <tr>
-          <td>No Spin + Tokio 1 Thread</td>
-          <td>No semaphore spin with oha limited to 1 thread</td>
-          <td>106,763</td>
-          <td>100.3%</td>
-          <td>106,443 </td>
+          <td>125,763</td>
+          <td>389.6% </td>
+          <td>0.0-452.9</td>
+          <td>32,278 </td>
         </tr>
       
         <tr>
           <td>No Spin + Tokio 2 Threads</td>
           <td>No semaphore spin with oha limited to 2 threads</td>
-          <td>119,013</td>
-          <td>112.35%</td>
-          <td>105,931 </td>
+          <td>127,123</td>
+          <td>424.1% </td>
+          <td>4.4-513.2</td>
+          <td>29,976 </td>
+        </tr>
+      
+        <tr>
+          <td>No Spin + Tokio 1 Thread</td>
+          <td>No semaphore spin with oha limited to 1 thread</td>
+          <td>113,995</td>
+          <td>399.9% </td>
+          <td>10.5-507.3</td>
+          <td>28,507 </td>
         </tr>
       
         <tr>
           <td>Base Case</td>
           <td>Default configuration</td>
-          <td>129,472</td>
-          <td>166.14999999999998%</td>
-          <td>77,925 </td>
+          <td>135,878</td>
+          <td>617.6% </td>
+          <td>0.0-670.5</td>
+          <td>21,999 </td>
         </tr>
       
         <tr>
           <td>Tokio 1 Thread</td>
           <td>Default config with oha limited to 1 thread</td>
-          <td>103,083</td>
-          <td>184.2%</td>
-          <td>55,963 </td>
+          <td>114,935</td>
+          <td>863.9% </td>
+          <td>13.0-898.5</td>
+          <td>13,305 </td>
         </tr>
       
+      
+      <tr>
+        <td colspan="6" style="text-align: left; font-size: 0.9em; padding-top: 10px;">
+          * CPU Usage shows the average usage across all samples. <sup>(est)</sup> indicates estimated values where measurement wasn't possible.
+        </td>
+      </tr>
     </tbody>
   </table>
   
@@ -195,7 +208,7 @@
   
   <script>
     // Load the benchmark data
-    const data = [{"summary":{"successRate":1,"total":30.001233584,"slowest":0.009256834,"fastest":0.000028958,"average":0.00018991994080030602,"requestsPerSec":104892.82019650968,"totalData":12587632,"sizePerRequest":4,"sizePerSec":419570.480818933},"responseTimeHistogram":{"0.000028958":1,"0.0009517456":3145260,"0.0018745332":957,"0.0027973208":569,"0.0037201084":61,"0.004642896":40,"0.0055656836":0,"0.0064884712":4,"0.0074112588":7,"0.008334046400000001":8,"0.009256834":1},"latencyPercentiles":{"p10":0.000138916,"p25":0.000160917,"p50":0.000184333,"p75":0.000209209,"p90":0.000241125,"p95":0.00026725,"p99":0.000348208,"p99.9":0.000692666,"p99.99":0.002555},"rps":{"mean":104881.83054765634,"stddev":11094.45714325794,"max":126808.16828906345,"min":9481.74018579127,"percentiles":{"p10":95265.55272822148,"p25":104285.80499398289,"p50":107688.0017133968,"p75":110109.63459306359,"p90":112825.38571178359,"p95":114788.47895958507,"p99":118620.26034045932,"p99.9":124031.00775193945,"p99.99":126808.16828906345}},"details":{"DNSDialup":{"average":0.0006671083000000001,"fastest":0.000626792,"slowest":0.000699875},"DNSLookup":{"average":0.000005608300000000001,"fastest":0.000001125,"slowest":0.0000485}},"statusCodeDistribution":{"200":3146908},"errorDistribution":{"aborted due to deadline":6},"cpuUsage":30.35,"rpsPerCore":345611,"config":{"name":"Single Worker Thread","description":"1 worker thread, no semaphore spin, oha with 2 threads","env":{"LAMBDA_DISPATCH_MaxWorkerThreads":"1","DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"successRate":1,"total":30.000274084,"slowest":0.003809834,"fastest":0.000029166,"average":0.00016705553925587232,"requestsPerSec":118278.61939076276,"totalData":14193544,"sizePerRequest":4,"sizePerSec":473113.8109024751},"responseTimeHistogram":{"0.000029166":1,"0.0004072328":3541581,"0.0007852995999999999":5603,"0.0011633663999999998":374,"0.0015414331999999999":184,"0.0019195":114,"0.0022975668":241,"0.0026756336":153,"0.0030537004":75,"0.0034317672":20,"0.0038098340000000002":40},"latencyPercentiles":{"p10":0.000109333,"p25":0.000134167,"p50":0.000163125,"p75":0.000193791,"p90":0.00022475,"p95":0.00024675,"p99":0.000306,"p99.9":0.000474583,"p99.99":0.002201625},"rps":{"mean":118273.26106484643,"stddev":10791.762754011712,"max":138516.74667465902,"min":34533.98169190712,"percentiles":{"p10":106219.91623430252,"p25":113828.45711427993,"p50":120303.00757516298,"p75":125301.03999863168,"p90":128754.17975884533,"p95":130762.35453938312,"p99":134222.37486990908,"p99.9":137547.2856334535,"p99.99":138516.74667465902}},"details":{"DNSDialup":{"average":0.00055794995,"fastest":0.000451791,"slowest":0.000778167},"DNSLookup":{"average":0.00007214589999999998,"fastest":0.000001834,"slowest":0.000239042}},"statusCodeDistribution":{"200":3548386},"errorDistribution":{"aborted due to deadline":5},"cpuUsage":105,"rpsPerCore":112646,"config":{"name":"No Semaphore Spin","description":"Disabling Semaphore spinning","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{}}},{"summary":{"successRate":1,"total":30.00126475,"slowest":0.053044833,"fastest":0.000032625,"average":0.00018701121329832857,"requestsPerSec":106762.79905832969,"totalData":12812064,"sizePerRequest":4,"sizePerSec":427050.7962501814},"responseTimeHistogram":{"0.000032625":1,"0.0053338458":3202931,"0.0106350666":44,"0.015936287400000002":0,"0.0212375082":0,"0.026538729":20,"0.0318399498":0,"0.0371411706":0,"0.0424423914":0,"0.0477436122":0,"0.053044833":20},"latencyPercentiles":{"p10":0.000140875,"p25":0.000162167,"p50":0.000181125,"p75":0.000202625,"p90":0.000231167,"p95":0.000257208,"p99":0.000346166,"p99.9":0.000633458,"p99.99":0.002468583},"rps":{"mean":106950.06047628712,"stddev":9679.627363627435,"max":120436.63682491813,"min":18.922475167988747,"percentiles":{"p10":98471.39175902207,"p25":105065.0361587754,"p50":109235.96047818859,"p75":112003.2592948589,"p90":113836.84890769495,"p95":114811.96340657993,"p99":116832.12883541337,"p99.9":118630.65416103478,"p99.99":120436.63682491813}},"details":{"DNSDialup":{"average":0.0007033439000000001,"fastest":0.000428583,"slowest":0.000862208},"DNSLookup":{"average":0.0000021251,"fastest":8.34e-7,"slowest":0.000022292}},"statusCodeDistribution":{"200":3203016},"errorDistribution":{"aborted due to deadline":3},"cpuUsage":100.3,"rpsPerCore":106443,"config":{"name":"No Spin + Tokio 1 Thread","description":"No semaphore spin with oha limited to 1 thread","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}},{"summary":{"successRate":1,"total":30.000524541,"slowest":0.005362167,"fastest":0.000031291,"average":0.000167165531022403,"requestsPerSec":119013.11909131662,"totalData":14281808,"sizePerRequest":4,"sizePerSec":476051.94304125814},"responseTimeHistogram":{"0.000031291":1,"0.0005643786":3568302,"0.0010974662":1255,"0.0016305538":227,"0.0021636414":244,"0.002696729":328,"0.0032298166":27,"0.0037629042":9,"0.0042959918":39,"0.0048290794":0,"0.005362167":20},"latencyPercentiles":{"p10":0.000115292,"p25":0.000135791,"p50":0.000160459,"p75":0.000189625,"p90":0.000224083,"p95":0.000249875,"p99":0.000318791,"p99.9":0.000479458,"p99.99":0.002269708},"rps":{"mean":119005.71219160096,"stddev":10299.559960172455,"max":134756.15288893785,"min":22423.077831706414,"percentiles":{"p10":107237.53313660058,"p25":115529.25838639327,"p50":121437.4391624878,"p75":125585.76646575864,"p90":128360.43209143805,"p95":129828.13375658635,"p99":131939.04076213684,"p99.9":133516.14210156666,"p99.99":134756.15288893785}},"details":{"DNSDialup":{"average":0.0004992250000000001,"fastest":0.000406709,"slowest":0.000548958},"DNSLookup":{"average":0.000005845849999999999,"fastest":0.000001375,"slowest":0.000054583}},"statusCodeDistribution":{"200":3570452},"errorDistribution":{"aborted due to deadline":4},"cpuUsage":112.35,"rpsPerCore":105931,"config":{"name":"No Spin + Tokio 2 Threads","description":"No semaphore spin with oha limited to 2 threads","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}}},{"summary":{"successRate":1,"total":30.001847167,"slowest":0.018410583,"fastest":0.000027292,"average":0.00015214125778517478,"requestsPerSec":129472.09478063667,"totalData":15537604,"sizePerRequest":4,"sizePerSec":517888.2457974225},"responseTimeHistogram":{"0.000027292":1,"0.0018656210999999999":3883628,"0.0037039501999999998":642,"0.0055422792999999995":92,"0.0073806084":17,"0.0092189375":5,"0.011057266599999999":5,"0.0128955957":3,"0.0147339248":3,"0.0165722539":1,"0.018410583":4},"latencyPercentiles":{"p10":0.000102334,"p25":0.000121958,"p50":0.000145792,"p75":0.000173208,"p90":0.000203,"p95":0.000225125,"p99":0.000295458,"p99.9":0.000625959,"p99.99":0.00246425},"rps":{"mean":129462.08911172608,"stddev":11227.125736023674,"max":147449.2924085697,"min":14986.862355523113,"percentiles":{"p10":118327.61766596338,"p25":126574.88170002901,"p50":131806.59032951435,"p75":135722.1499349373,"p90":138634.6586646678,"p95":140543.9199749592,"p99":143714.37143716155,"p99.9":145774.92991589426,"p99.99":147449.2924085697}},"details":{"DNSDialup":{"average":0.0027539270999999994,"fastest":0.001802834,"slowest":0.003326666},"DNSLookup":{"average":0.00044118555,"fastest":0.000001875,"slowest":0.000897084}},"statusCodeDistribution":{"200":3884401},"errorDistribution":{"aborted due to deadline":1},"cpuUsage":166.14999999999998,"rpsPerCore":77925,"config":{"name":"Base Case","description":"Default configuration","env":{},"ohaEnv":{}}},{"summary":{"successRate":1,"total":30.001171917,"slowest":0.050058625,"fastest":0.000039125,"average":0.00019368148866204105,"requestsPerSec":103083.43982548166,"totalData":12370480,"sizePerRequest":4,"sizePerSec":412333.2259894266},"responseTimeHistogram":{"0.000039125":1,"0.005041075":3092588,"0.010043024999999999":7,"0.015044974999999999":1,"0.020046925":3,"0.025048874999999998":0,"0.030050825":0,"0.035052775":0,"0.040054725":0,"0.045056675":0,"0.050058624999999995":20},"latencyPercentiles":{"p10":0.000136542,"p25":0.000158416,"p50":0.000176,"p75":0.000195958,"p90":0.00023725,"p95":0.000406959,"p99":0.00050325,"p99.9":0.000635958,"p99.99":0.002635334},"rps":{"mean":103205.22199920971,"stddev":17665.530124075125,"max":131951.68547520225,"min":20.129938754661968,"percentiles":{"p10":76312.08783471167,"p25":93769.53949049527,"p50":110168.46962375651,"p75":116101.93890237757,"p90":118625.20785667164,"p95":120705.7960637725,"p99":125013.0451664039,"p99.9":129219.38290743584,"p99.99":131951.68547520225}},"details":{"DNSDialup":{"average":0.0004333293,"fastest":0.000345416,"slowest":0.000548042},"DNSLookup":{"average":0.0000024875999999999997,"fastest":7.92e-7,"slowest":0.000028167}},"statusCodeDistribution":{"200":3092620},"errorDistribution":{"aborted due to deadline":4},"cpuUsage":184.2,"rpsPerCore":55963,"config":{"name":"Tokio 1 Thread","description":"Default config with oha limited to 1 thread","env":{},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}}}];
+    const data = [{"summary":{"successRate":1,"total":30.000965791,"slowest":0.010436125,"fastest":0.000027291,"average":0.00018173931527326292,"requestsPerSec":109670.3027136224,"totalData":13160812,"sizePerRequest":4,"sizePerSec":438679.6109059968},"responseTimeHistogram":{"0.000027291":1,"0.0010681744":3289031,"0.0021090578":1017,"0.0031499412":100,"0.0041908245999999994":16,"0.005231707999999999":18,"0.006272591399999999":0,"0.0073134748":0,"0.0083543582":0,"0.0093952416":0,"0.010436125":20},"latencyPercentiles":{"p10":0.000138375,"p25":0.00015825,"p50":0.000179208,"p75":0.000199083,"p90":0.0002215,"p95":0.000242584,"p99":0.000292125,"p99.9":0.000726875,"p99.99":0.001582417},"rps":{"mean":109650.84701820649,"stddev":12457.071984426464,"max":130275.62370583389,"min":98.15228326750118,"percentiles":{"p10":106478.9754560952,"p25":109033.1678896684,"p50":111269.50376811127,"p75":114776.37468788729,"p90":118754.63492504053,"p95":121411.28558436793,"p99":125374.78391390377,"p99.9":128546.0580526005,"p99.99":130275.62370583389}},"details":{"DNSDialup":{"average":0.0007427416000000001,"fastest":0.000571375,"slowest":0.000827667},"DNSLookup":{"average":0.00000478755,"fastest":9.17e-7,"slowest":0.000048}},"statusCodeDistribution":{"200":3290203},"errorDistribution":{"aborted due to deadline":12},"cpuUsage":133.9066666666667,"rpsPerCore":81901,"config":{"name":"Single Worker Thread","description":"1 worker thread, no semaphore spin, oha with 2 threads","env":{"LAMBDA_DISPATCH_MaxWorkerThreads":"1","DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}},"cpuMeasurement":{"samples":32,"min":0,"max":142,"average":133.9066666666667,"measured":true}},{"summary":{"successRate":1,"total":30.001129541,"slowest":0.006956541,"fastest":0.000031917,"average":0.0001570078455543187,"requestsPerSec":125763.06484873225,"totalData":15092116,"sizePerRequest":4,"sizePerSec":503051.5927533623},"responseTimeHistogram":{"0.000031917":1,"0.0007243794":3772525,"0.0014168418":194,"0.0021093042":97,"0.0028017665999999996":52,"0.0034942289999999993":65,"0.0041866914":19,"0.0048791538":5,"0.0055716162":29,"0.0062640785999999995":24,"0.006956540999999999":18},"latencyPercentiles":{"p10":0.000105125,"p25":0.000128667,"p50":0.000155625,"p75":0.000182958,"p90":0.000208042,"p95":0.000223625,"p99":0.000256292,"p99.9":0.000335833,"p99.99":0.000960875},"rps":{"mean":125737.69095457629,"stddev":8661.109263289722,"max":141165.88211718417,"min":3301.7747039030432,"percentiles":{"p10":118521.72503219837,"p25":123292.97523262417,"p50":127442.85069133359,"p75":130242.7330111202,"p90":132200.71018985083,"p95":133381.69628898683,"p99":136015.87305239675,"p99.9":139603.63791246474,"p99.99":141165.88211718417}},"details":{"DNSDialup":{"average":0.0005236414500000001,"fastest":0.000419,"slowest":0.000743916},"DNSLookup":{"average":0.00009098334999999998,"fastest":0.000001791,"slowest":0.000310875}},"statusCodeDistribution":{"200":3773029},"errorDistribution":{"aborted due to deadline":5},"cpuUsage":389.6299999999999,"rpsPerCore":32278,"config":{"name":"No Semaphore Spin","description":"Disabling Semaphore spinning","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{}},"cpuMeasurement":{"samples":32,"min":0,"max":452.9,"average":389.6299999999999,"measured":true}},{"summary":{"successRate":1,"total":30.000851875,"slowest":0.003531625,"fastest":0.000031458,"average":0.00015650838519901824,"requestsPerSec":127123.12356630374,"totalData":15255200,"sizePerRequest":4,"sizePerSec":508492.2276061203},"responseTimeHistogram":{"0.000031458":1,"0.0003814747":3810065,"0.0007314914":3080,"0.0010815081":341,"0.0014315248":97,"0.0017815415000000002":102,"0.0021315581999999996":61,"0.0024815748999999997":8,"0.0028315916":5,"0.0031816083":15,"0.003531625":25},"latencyPercentiles":{"p10":0.0001125,"p25":0.000131666,"p50":0.000153625,"p75":0.000177292,"p90":0.000202458,"p95":0.000220208,"p99":0.00026075,"p99.9":0.000379208,"p99.99":0.000983959},"rps":{"mean":127122.05950201876,"stddev":7471.219179365198,"max":139207.5450489507,"min":27216.67021050473,"percentiles":{"p10":121124.2248449689,"p25":126115.76447055531,"p50":128742.15708984584,"p75":130507.62164511153,"p90":132104.95393573944,"p95":132883.61036762426,"p99":134566.73164222387,"p99.9":136113.03962919628,"p99.99":139207.5450489507}},"details":{"DNSDialup":{"average":0.0004848416500000001,"fastest":0.000415959,"slowest":0.000564625},"DNSLookup":{"average":0.0000037688000000000002,"fastest":8.75e-7,"slowest":0.000032}},"statusCodeDistribution":{"200":3813800},"errorDistribution":{"aborted due to deadline":2},"cpuUsage":424.08,"rpsPerCore":29976,"config":{"name":"No Spin + Tokio 2 Threads","description":"No semaphore spin with oha limited to 2 threads","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"2"}},"cpuMeasurement":{"samples":32,"min":4.4,"max":513.2,"average":424.08,"measured":true}},{"summary":{"successRate":1,"total":30.001249166,"slowest":0.0672515,"fastest":0.000036333,"average":0.0001751584078049803,"requestsPerSec":113995.18670295356,"totalData":13679980,"sizePerRequest":4,"sizePerSec":455980.34682846913},"responseTimeHistogram":{"0.000036333":1,"0.006757849700000001":3419934,"0.013479366400000001":20,"0.020200883100000004":20,"0.026922399800000003":0,"0.0336439165":0,"0.04036543320000001":0,"0.04708694990000001":0,"0.05380846660000001":0,"0.060529983300000006":0,"0.0672515":20},"latencyPercentiles":{"p10":0.000134583,"p25":0.000156042,"p50":0.000174958,"p75":0.000193541,"p90":0.000212792,"p95":0.00022625,"p99":0.000256708,"p99.9":0.000323333,"p99.99":0.000508125},"rps":{"mean":114237.1701051463,"stddev":5456.587599919216,"max":131841.75428359647,"min":14.911361350926159,"percentiles":{"p10":110535.45977549686,"p25":112441.69337990195,"p50":114310.48227122087,"p75":116415.36843161557,"p90":118621.24506500257,"p95":120135.53609159509,"p99":123329.7964788217,"p99.9":130440.76273832511,"p99.99":131841.75428359647}},"details":{"DNSDialup":{"average":0.00048514174999999995,"fastest":0.000353333,"slowest":0.000567584},"DNSLookup":{"average":0.00000208125,"fastest":7.91e-7,"slowest":0.000022375}},"statusCodeDistribution":{"200":3419995},"errorDistribution":{"aborted due to deadline":3},"cpuUsage":399.89,"rpsPerCore":28507,"config":{"name":"No Spin + Tokio 1 Thread","description":"No semaphore spin with oha limited to 1 thread","env":{"DOTNET_ThreadPool_UnfairSemaphoreSpinLimit":"0"},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}},"cpuMeasurement":{"samples":32,"min":10.5,"max":507.3,"average":399.89,"measured":true}},{"summary":{"successRate":1,"total":30.000744125,"slowest":0.033521334,"fastest":0.000032083,"average":0.00014493985397951375,"requestsPerSec":135878.06299121256,"totalData":16305768,"sizePerRequest":4,"sizePerSec":543512.1186348241},"responseTimeHistogram":{"0.000032083":1,"0.0033810080999999996":4076217,"0.006729933199999999":134,"0.010078858299999998":27,"0.013427783399999999":24,"0.016776708499999998":24,"0.020125633599999995":10,"0.023474558699999995":1,"0.026823483799999995":3,"0.030172408899999996":0,"0.033521334":1},"latencyPercentiles":{"p10":0.000101375,"p25":0.000119667,"p50":0.000140959,"p75":0.000164333,"p90":0.00018825,"p95":0.000204292,"p99":0.000244917,"p99.9":0.000486917,"p99.99":0.00250525},"rps":{"mean":135803.1793970379,"stddev":12752.724536739106,"max":149365.51255642783,"min":82.66170696425272,"percentiles":{"p10":129863.42012788932,"p25":135011.81353368124,"p50":138018.97760940084,"p75":140426.96001450517,"p90":142410.68080106145,"p95":143605.98836972888,"p99":145888.74412306194,"p99.9":147919.5716007646,"p99.99":149365.51255642783}},"details":{"DNSDialup":{"average":0.0017901707999999998,"fastest":0.001354416,"slowest":0.002201291},"DNSLookup":{"average":0.00022967494999999997,"fastest":0.000001708,"slowest":0.000486375}},"statusCodeDistribution":{"200":4076442},"errorDistribution":{"aborted due to deadline":1},"cpuUsage":617.65,"rpsPerCore":21999,"config":{"name":"Base Case","description":"Default configuration","env":{},"ohaEnv":{}},"cpuMeasurement":{"samples":32,"min":0,"max":670.5,"average":617.65,"measured":true}},{"summary":{"successRate":1,"total":30.000550625,"slowest":0.006611583,"fastest":0.000032625,"average":0.0001737267246088574,"requestsPerSec":114935.32379124459,"totalData":13792484,"sizePerRequest":4,"sizePerSec":459741.02850320603},"responseTimeHistogram":{"0.000032625":1,"0.0006905208":3447424,"0.0013484166":451,"0.0020063124000000002":136,"0.0026642082":46,"0.0033221039999999998":37,"0.0039799998":19,"0.0046378956":3,"0.0052957913999999995":0,"0.005953687199999999":2,"0.006611582999999999":2},"latencyPercentiles":{"p10":0.000128583,"p25":0.000149166,"p50":0.000168375,"p75":0.000185583,"p90":0.000205208,"p95":0.000224625,"p99":0.000441417,"p99.9":0.000568959,"p99.99":0.001144541},"rps":{"mean":114923.10456111017,"stddev":14521.086592552361,"max":136292.3561365378,"min":34843.29304262957,"percentiles":{"p10":96698.71004322235,"p25":114065.68178601407,"p50":117796.34399146025,"p75":122816.37142233698,"p90":127756.43001515717,"p95":129847.60213093838,"p99":132623.76617891312,"p99.9":135148.99150942138,"p99.99":136292.3561365378}},"details":{"DNSDialup":{"average":0.0004212333499999999,"fastest":0.000346667,"slowest":0.000478209},"DNSLookup":{"average":0.0000020500499999999995,"fastest":8.33e-7,"slowest":0.000021375}},"statusCodeDistribution":{"200":3448121},"errorDistribution":{"aborted due to deadline":2},"cpuUsage":863.8733333333332,"rpsPerCore":13305,"config":{"name":"Tokio 1 Thread","description":"Default config with oha limited to 1 thread","env":{},"ohaEnv":{"TOKIO_WORKER_THREADS":"1"}},"cpuMeasurement":{"samples":32,"min":13,"max":898.5,"average":863.8733333333332,"measured":true}}];
     
     // Chart colors
     const colors = [
@@ -212,10 +225,10 @@
     new Chart(rpsCtx, {
       type: 'bar',
       data: {
-        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 1 Thread","No Spin + Tokio 2 Threads","Base Case","Tokio 1 Thread"],
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
         datasets: [{
           label: 'Requests per Second',
-          data: [104892.82019650968,118278.61939076276,106762.79905832969,119013.11909131662,129472.09478063667,103083.43982548166],
+          data: [109670.3027136224,125763.06484873225,127123.12356630374,113995.18670295356,135878.06299121256,114935.32379124459],
           backgroundColor: colors,
           borderColor: colors.map(c => c.replace('0.8', '1')),
           borderWidth: 1
@@ -251,10 +264,10 @@
     new Chart(cpuCtx, {
       type: 'bar',
       data: {
-        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 1 Thread","No Spin + Tokio 2 Threads","Base Case","Tokio 1 Thread"],
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
         datasets: [{
           label: 'CPU Usage (%)',
-          data: [30.35,105,100.3,112.35,166.14999999999998,184.2],
+          data: [133.9066666666667,389.6299999999999,424.08,399.89,617.65,863.8733333333332],
           backgroundColor: colors,
           borderColor: colors.map(c => c.replace('0.8', '1')),
           borderWidth: 1
@@ -290,10 +303,10 @@
     new Chart(efficiencyCtx, {
       type: 'bar',
       data: {
-        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 1 Thread","No Spin + Tokio 2 Threads","Base Case","Tokio 1 Thread"],
+        labels: ["Single Worker Thread","No Semaphore Spin","No Spin + Tokio 2 Threads","No Spin + Tokio 1 Thread","Base Case","Tokio 1 Thread"],
         datasets: [{
           label: 'Requests per Second per CPU Core',
-          data: [345611,112646,106443,105931,77925,55963],
+          data: [81901,32278,29976,28507,21999,13305],
           backgroundColor: colors,
           borderColor: colors.map(c => c.replace('0.8', '1')),
           borderWidth: 1

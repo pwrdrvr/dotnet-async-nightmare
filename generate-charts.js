@@ -155,20 +155,35 @@ function generateChartsHtml(data) {
         <th>Configuration</th>
         <th>Description</th>
         <th>Throughput (req/sec)</th>
-        <th>CPU Usage (%)</th>
+        <th>CPU Usage (%) <sup>*</sup></th>
+        <th>Min-Max CPU (%)</th>
         <th>Efficiency (req/sec/core)</th>
       </tr>
     </thead>
     <tbody>
-      ${data.map(item => `
+      ${data.map(item => {
+        const cpuMeasurement = item.cpuMeasurement || {};
+        const isMeasured = cpuMeasurement.measured;
+        const minMaxCpu = isMeasured 
+          ? `${cpuMeasurement.min?.toFixed(1)}-${cpuMeasurement.max?.toFixed(1)}` 
+          : 'N/A';
+        
+        return `
         <tr>
           <td>${item.config.name}</td>
           <td>${item.config.description}</td>
           <td>${Math.round(item.summary.requestsPerSec).toLocaleString()}</td>
-          <td>${item.cpuUsage}%</td>
+          <td>${item.cpuUsage.toFixed(1)}% ${isMeasured ? '' : '<sup>(est)</sup>'}</td>
+          <td>${minMaxCpu}</td>
           <td>${item.rpsPerCore.toLocaleString()} ${item === bestConfig ? '<span class="fire-emoji">🔥</span>' : ''}</td>
         </tr>
-      `).join('')}
+      `}).join('')}
+      
+      <tr>
+        <td colspan="6" style="text-align: left; font-size: 0.9em; padding-top: 10px;">
+          * CPU Usage shows the average usage across all samples. <sup>(est)</sup> indicates estimated values where measurement wasn't possible.
+        </td>
+      </tr>
     </tbody>
   </table>
   
